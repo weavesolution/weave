@@ -1,0 +1,1909 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bank Statement Summary</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f5f4f0; --paper:#ffffff; --ink:#1d2321; --muted:#68716d; --line:#e2e0d8;
+  --accent:#0f5c4d; --accent-2:#e7f1ee; --cr:#11734f; --dr:#b3261e; --warn:#a15c00; --warn-bg:#fff4e0;
+  --mono:'IBM Plex Mono',ui-monospace,monospace; --sans:'IBM Plex Sans',system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 var(--sans)}
+.wrap{max-width:1280px;margin:0 auto;padding:0 20px}
+.top{background:var(--paper);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+.top-in{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 20px;flex-wrap:wrap}
+.brand{display:flex;gap:12px;align-items:center}
+.mark{width:40px;height:40px;border-radius:10px;background:var(--accent);color:#fff;display:grid;place-items:center;font-size:20px;font-weight:600}
+h1{font-size:18px;margin:0;font-weight:600}
+.brand p{margin:0;color:var(--muted);font-size:12.5px}
+h2{font-size:15px;font-weight:600;margin:28px 0 10px}
+.btn{font:inherit;font-weight:500;border:1px solid var(--line);background:var(--paper);color:var(--ink);padding:8px 14px;border-radius:8px;cursor:pointer}
+.btn:hover:not(:disabled){border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn.primary:hover:not(:disabled){filter:brightness(1.1)}
+.btn.ghost{background:transparent}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.top-actions{display:flex;gap:8px}
+
+.drop{margin:22px 0 12px;border:2px dashed #c9c6ba;border-radius:14px;background:var(--paper);padding:30px 20px;text-align:center;cursor:pointer;transition:.15s}
+.drop:hover,.drop.over{border-color:var(--accent);background:var(--accent-2)}
+.drop-in{display:flex;flex-direction:column;gap:4px;align-items:center}
+.drop strong{font-size:16px}
+.drop span{color:var(--muted)}
+.drop small{color:var(--muted);max-width:640px;margin-top:6px}
+
+.files{display:flex;flex-direction:column;gap:6px}
+.file{display:flex;align-items:center;gap:10px;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:13px;flex-wrap:wrap}
+.file .nm{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:420px}
+.file .meta{color:var(--muted)}
+.file .x{margin-left:auto;border:0;background:none;color:var(--muted);cursor:pointer;font-size:16px}
+.badge{font-size:11.5px;padding:2px 8px;border-radius:99px;font-weight:500;white-space:nowrap}
+.badge.ok{background:#e3f4ec;color:var(--cr)}
+.badge.bad{background:#fde8e6;color:var(--dr)}
+.badge.warn{background:var(--warn-bg);color:var(--warn)}
+.badge.busy{background:#eef0f6;color:#3d4a6b;animation:pulse 1.4s ease-in-out infinite}
+.badge.info{background:#e8eef8;color:#33507a}
+.badge.muted{background:#efefec;color:var(--muted)}
+@keyframes pulse{50%{opacity:.55}}
+.msgs{width:100%;font-size:12px;margin:2px 0 0 0;padding-left:18px}
+.msgs li.warn{color:var(--warn)} .msgs li.info{color:#33507a}
+.tbl tr.flag td{background:var(--warn-bg)}
+
+.settings{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-top:18px}
+.settings label{font-weight:500;font-size:13px}
+.hint{color:var(--muted);font-weight:400}
+.row{display:flex;gap:8px;margin-top:6px}
+input[type=text],input[type=search],select{font:inherit;border:1px solid var(--line);border-radius:8px;padding:7px 10px;background:#fff;color:var(--ink);min-width:0}
+.row input{flex:1}
+
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:10px;margin-top:16px}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.card .k{color:var(--muted);font-size:12px}
+.card .v{font:500 16px/1.3 var(--mono);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card .s{color:var(--muted);font-size:12px;margin-top:2px}
+
+.tbl-wrap{background:var(--paper);border:1px solid var(--line);border-radius:12px;overflow:auto}
+.tbl-wrap.tall{max-height:620px}
+.tbl{border-collapse:collapse;width:100%;font-size:12.8px}
+.tbl th{position:sticky;top:0;background:#faf9f6;text-align:left;font-weight:600;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap;z-index:1}
+.tbl td{padding:7px 10px;border-bottom:1px solid #efede7;vertical-align:top}
+.tbl tr:last-child td{border-bottom:0}
+.tbl .n{text-align:right;font-family:var(--mono);white-space:nowrap}
+.tbl tfoot td{font-weight:600;background:#faf9f6;border-top:1px solid var(--line)}
+.tbl .desc{min-width:260px;max-width:440px;word-break:break-word}
+.cr{color:var(--cr)} .dr{color:var(--dr)} .muted{color:var(--muted)}
+.tag{font-size:11.5px;background:#f0efe9;border-radius:6px;padding:1px 6px;white-space:nowrap}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px}
+.filters input{flex:1;min-width:200px}
+.foot{color:var(--muted);font-size:12px;padding:30px 20px 40px}
+@media (max-width:860px){.two{grid-template-columns:1fr}.file .nm{max-width:200px}}
+
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap top-in">
+    <div class="brand">
+      <span class="mark">₹</span>
+      <div>
+        <h1>Bank Statement Summary</h1>
+        <p>PDF statements are read inside your browser. Nothing is uploaded to any server.</p>
+      </div>
+    </div>
+    <div class="top-actions">
+      <button id="btnExcel" class="btn primary" disabled>Download Excel</button>
+      <button id="btnClear" class="btn ghost" disabled>Clear</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section id="drop" class="drop" tabindex="0">
+    <input id="file" type="file" accept="application/pdf,.pdf" multiple hidden>
+    <div class="drop-in">
+      <strong>Drop bank statement PDFs here</strong>
+      <span>or <u>browse</u> — select several accounts at once</span>
+      <small>Works with text PDFs and scanned / image PDFs (read with OCR). Tested with Axis, IDBI, IOB, PNB, HDFC, Kotak, Central Bank, Bank of India, Canara, Jio Payments Bank and PhonePe statements.</small>
+    </div>
+  </section>
+
+  <section id="files" class="files"></section>
+
+  <section id="results" hidden>
+    <div class="settings">
+      <label for="ownKw">Own-company keywords <span class="hint">(used to tag transfers between your own accounts; comma separated)</span></label>
+      <div class="row">
+        <input id="ownKw" type="text" placeholder="e.g. DYNAMIC SERV, SELF">
+        <button id="btnApply" class="btn">Apply</button>
+      </div>
+    </div>
+
+    <div id="cards" class="cards"></div>
+
+    <h2>Account-wise summary</h2>
+    <div class="tbl-wrap"><table id="tblAccounts" class="tbl"></table></div>
+
+    <div class="two">
+      <div>
+        <h2>Category summary</h2>
+        <div class="tbl-wrap"><table id="tblCats" class="tbl"></table></div>
+      </div>
+      <div>
+        <h2>Top counterparties</h2>
+        <div class="tbl-wrap"><table id="tblParties" class="tbl"></table></div>
+      </div>
+    </div>
+
+    <h2>Transactions</h2>
+    <div class="filters">
+      <select id="fAcc"></select>
+      <select id="fType">
+        <option value="">Debits &amp; credits</option>
+        <option value="cr">Credits only</option>
+        <option value="dr">Debits only</option>
+      </select>
+      <select id="fCat"></select>
+      <input id="fSearch" type="search" placeholder="Search description / counterparty">
+      <span id="fCount" class="muted"></span>
+    </div>
+    <div class="tbl-wrap tall"><table id="tblTxns" class="tbl"></table></div>
+  </section>
+</main>
+
+<footer class="wrap foot">Runs entirely in your browser (pdf.js, Tesseract OCR). Every statement is checked row-by-row against its running balance; flagged rows are highlighted in the Excel report.</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+/* ---- parser.js ---- */
+/*
+ * Bank statement PDF parser — runs fully in the browser (also loadable in Node for testing).
+ * Input: pages -> [{ items: [{x, y, w, h, s}] }]  (PDF points, y grows upwards, like pdf.js)
+ * Text PDFs are read with pdf.js; scanned / outlined PDFs are OCR'd and converted with ocrWordsToItems().
+ * The table header (Date / Narration / Debit-Credit-Amount / Balance) defines the columns; wrapped cells are
+ * grouped into transactions; the running balance is then used to verify (and orient) every row.
+ */
+(function (root) {
+  'use strict';
+
+  // ---------- dates & amounts ----------
+  const MONTHS = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, sept: 9, oct: 10, nov: 11, dec: 12 };
+  const MON = '(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\\.?';
+  const TIME = '(?:[\\sT,]+\\d{1,2}[:.]\\d{2}(?:[:.]\\d{2}(?:\\.\\d+)?)?\\s*(?:[ap]\\.?m\\.?)?)?';
+  const D_NUM = `(\\d{1,2})\\s*[\\/\\-.]\\s*(\\d{1,2})\\s*[\\/\\-.]\\s*(\\d{4}|\\d{2})`;
+  const D_DMON = `(\\d{1,2})[\\s\\-\\/.]*(${MON})[\\s\\-\\/.,']*(\\d{4}|\\d{2})`;
+  const D_MOND = `(${MON})[\\s\\-.]*(\\d{1,2})(?:st|nd|rd|th)?,?[\\s\\-,']*(\\d{4})`;
+  const D_ISO = `(\\d{4})-(\\d{2})-(\\d{2})`;
+  const RE_FULL = [D_NUM, D_DMON, D_MOND, D_ISO].map(p => new RegExp(`^${p}${TIME}$`, 'i'));
+  const DATE_ANY = `(?:${D_NUM}|${D_DMON}|${D_MOND}|${D_ISO})`.replace(/\((?!\?)/g, '(?:');
+
+  function mkDate(y, m, d) {
+    y = +y; m = +m; d = +d;
+    if (y < 100) y += 2000;
+    if (!m || m > 12 || !d || d > 31 || y < 1990 || y > 2100) return null;
+    const dt = new Date(Date.UTC(y, m - 1, d));
+    return dt.getUTCMonth() === m - 1 ? dt : null;
+  }
+  const mon = s => MONTHS[s.toLowerCase().replace('.', '').slice(0, s.toLowerCase().startsWith('sept') ? 4 : 3)] || MONTHS[s.toLowerCase().slice(0, 3)];
+  function parseDate(s) {
+    s = String(s || '').trim().replace(/\s+/g, ' ');
+    if (!s || s.length > 32) return null;
+    let m;
+    if ((m = s.match(RE_FULL[0]))) return mkDate(m[3], m[2], m[1]);
+    if ((m = s.match(RE_FULL[1]))) return mkDate(m[3], mon(m[2]), m[1]);
+    if ((m = s.match(RE_FULL[2]))) return mkDate(m[3], mon(m[1]), m[2]);
+    if ((m = s.match(RE_FULL[3]))) return mkDate(m[1], m[2], m[3]);
+    return null;
+  }
+  const isDate = s => !!parseDate(s);
+
+  const NUM_TOKEN = /^\(?[-+]?\s*(?:INR|Rs\.?|₹|`)?\s*[-+]?\s*(?:\d{1,3}(?:,\d{2,3})+|\d+)(?:\.\d{0,3})?\s*\)?\s*(?:\(?(?:Dr|Cr)\.?\)?|[-+])?$/i;
+  const isAmountText = s => NUM_TOKEN.test(String(s).trim()) && /\d/.test(s);
+
+  /** returns {v, signed} or null.  signed=true when the text carried an explicit sign / Dr / Cr marker */
+  function parseAmountX(s) {
+    if (s == null) return null;
+    let t = String(s).replace(/INR|Rs\.?|₹|`/gi, '').replace(/\s+/g, '');
+    if (!t) return null;
+    let sign = 1, signed = false;
+    const suf = t.match(/\(?(Dr|Cr)\.?\)?$/i);
+    if (suf) { signed = true; if (/dr/i.test(suf[1])) sign = -1; t = t.slice(0, -suf[0].length); }
+    if (/^\(.*\)$/.test(t)) { sign = -sign; signed = true; t = t.slice(1, -1); }
+    if (/^-/.test(t)) { sign = -sign; signed = true; t = t.slice(1); } else if (/^\+/.test(t)) t = t.slice(1);
+    if (/-$/.test(t)) { sign = -sign; signed = true; t = t.slice(0, -1); } else if (/\+$/.test(t)) t = t.slice(0, -1);
+    t = t.replace(/,/g, '');
+    if (/^\d+(\.\d+)?E[+]?\d+$/i.test(t)) return { v: sign * parseFloat(t), signed };
+    if (!/^(\d+(\.\d*)?|\.\d+)$/.test(t)) return null;
+    return { v: sign * parseFloat(t), signed };
+  }
+  const parseAmount = s => { const r = parseAmountX(s); return r ? r.v : null; };
+
+  const round2 = n => Math.round(n * 100) / 100;
+  const median = a => { if (!a.length) return 0; const b = [...a].sort((x, y) => x - y); return b[Math.floor(b.length / 2)]; };
+  const fmtDate = d => d ? `${String(d.getUTCDate()).padStart(2, '0')}/${String(d.getUTCMonth() + 1).padStart(2, '0')}/${d.getUTCFullYear()}` : '';
+
+  function groupLines(items, tol) {
+    const sorted = [...items].sort((a, b) => b.y - a.y || a.x - b.x);
+    const lines = [];
+    for (const it of sorted) {
+      const last = lines[lines.length - 1];
+      if (last && Math.abs(last.y - it.y) <= tol) last.items.push(it);
+      else lines.push({ y: it.y, items: [it] });
+    }
+    lines.forEach(l => { l.items.sort((a, b) => a.x - b.x); l.text = l.items.map(i => i.s).join(' '); });
+    return lines;
+  }
+
+  // ---------- OCR adapter ----------
+  /** Tesseract words [{text, confidence|conf, bbox:{x0,y0,x1,y1}}] (pixels) -> items in PDF points */
+  function ocrWordsToItems(words, scale, heightPx) {
+    const ws = words.map(w => ({ s: String(w.text || '').trim(), c: w.confidence != null ? w.confidence : (w.conf != null ? w.conf : 90), b: w.bbox }))
+      .filter(w => w.s && w.c > 15 && !/^[|\[\]_~—–\-=:;.,'"`!lI]{1,3}$/.test(w.s))
+      .map(w => ({ ...w, s: w.s.replace(/^[|\[\]]+|[|\[\]]+$/g, ''), cy: (w.b.y0 + w.b.y1) / 2, h: w.b.y1 - w.b.y0 }))
+      .filter(w => w.s);
+    // line grouping by vertical centre
+    ws.sort((a, b) => a.cy - b.cy || a.b.x0 - b.b.x0);
+    const lines = [];
+    for (const w of ws) {
+      const ln = lines.find(l => Math.abs(l.cy - w.cy) < Math.max(4, Math.min(l.h, w.h) * 0.55));
+      if (ln) { ln.ws.push(w); ln.cy = (ln.cy * (ln.ws.length - 1) + w.cy) / ln.ws.length; ln.h = Math.max(ln.h, w.h); }
+      else lines.push({ cy: w.cy, h: w.h, ws: [w] });
+    }
+    const items = [];
+    for (const ln of lines) {
+      ln.ws.sort((a, b) => a.b.x0 - b.b.x0);
+      const hRef = median(ln.ws.map(w => w.h)) || 10;
+      let cur = null;
+      for (const w of ln.ws) {
+        const gap = cur ? w.b.x0 - cur.x1 : Infinity;
+        if (cur && gap < hRef * 0.55) { cur.s += ' ' + w.s; cur.x1 = w.b.x1; cur.y1 = Math.max(cur.y1, w.b.y1); cur.y0 = Math.min(cur.y0, w.b.y0); }
+        else { if (cur) items.push(cur); cur = { s: w.s, x0: w.b.x0, x1: w.b.x1, y0: w.b.y0, y1: w.b.y1, base: ln.cy + hRef / 2 }; }
+      }
+      if (cur) items.push(cur);
+    }
+    return items.map(i => ({ x: i.x0 / scale, w: (i.x1 - i.x0) / scale, y: (heightPx - i.base) / scale, h: (i.y1 - i.y0) / scale, s: i.s.replace(/\s+/g, ' ').trim() }));
+  }
+
+  // ---------- header detection ----------
+  function classify(label) {
+    const l = label.toLowerCase().replace(/\s+/g, ' ').trim();
+    if (/value\s*d(ate|t)/.test(l)) return 'vdate';
+    if (/(cr\s*\/\s*dr|dr\s*\/\s*cr|transaction type|txn type|^type$|^dr ?\/ ?cr$)/.test(l)) return 'type';
+    if (/balance/.test(l)) return 'balance';
+    if (/withdraw|debit|dr\.?\s*amount|^dr\.?$|paid out|payments?$/.test(l)) return 'debit';
+    if (/deposit|credit|cr\.?\s*amount|^cr\.?$|paid in|receipts?$/.test(l)) return 'credit';
+    if (/particular|narration|description|transaction details|^details$|remarks|^description/.test(l)) return 'desc';
+    if (/date|^dt\.?$|txn dt|tran dt/.test(l)) return 'date';
+    if (/cheque|chq|instrument|ref\.?\s*no|reference/.test(l)) return 'chq';
+    if (/amount|amt/.test(l)) return 'amount';
+    return 'other';
+  }
+  const HDR_WORD = /(date|balance|narration|particular|description|details|remarks|debit|credit|withdraw|deposit|amount|cheque|chq|value|type)/i;
+
+  function findHeaderOnPage(items) {
+    const lines = groupLines(items, 2);
+    for (let li = 0; li < lines.length; li++) {
+      const ln = lines[li];
+      const t = ln.text.toLowerCase();
+      if (!/date|dt\b/.test(t) && !/balance/.test(t)) continue;
+      if (ln.items.filter(i => HDR_WORD.test(i.s)).length < 2) continue;
+      if (ln.items.some(i => isDate(i.s))) continue;
+      // window: neighbouring header-ish lines (multi-line headers), stop at data rows
+      const hgt = median(ln.items.map(i => i.h)) || 8;
+      const win = [...ln.items];
+      for (const dir of [-1, 1]) {
+        for (let k = li + dir, prevY = ln.y; k >= 0 && k < lines.length; k += dir) {
+          const o = lines[k];
+          if (Math.abs(o.y - prevY) > hgt * 1.8 || Math.abs(o.y - ln.y) > hgt * 3.2) break;
+          if (o.items.some(i => isDate(i.s) || isAmountText(i.s) && i.s.length > 3)) break;
+          if (o.items.length > 12) break;
+          if (!o.items.every(i => HDR_WORD.test(i.s) || (i.s.length <= 14 && !/\d{3,}/.test(i.s)))) break;
+          if (o.items.some(i => /\d{4,}|[\/\-]\w+[\/\-]/.test(i.s) && !HDR_WORD.test(i.s))) break;
+          win.push(...o.items); prevY = o.y;
+        }
+      }
+      // merge stacked fragments into cells
+      const cells = [];
+      for (const it of [...win].sort((a, b) => a.x - b.x)) {
+        const c = cells.find(c => it.x < c.x1 + 1 && it.x + it.w > c.x0 - 1 && !c.parts.some(p => Math.abs(p.y - it.y) <= 2));
+        if (c) { c.parts.push(it); c.x0 = Math.min(c.x0, it.x); c.x1 = Math.max(c.x1, it.x + it.w); }
+        else cells.push({ x0: it.x, x1: it.x + it.w, parts: [it] });
+      }
+      cells.forEach(c => { c.label = c.parts.sort((a, b) => b.y - a.y || a.x - b.x).map(i => i.s).join(' '); c.key = classify(c.label); });
+      cells.sort((a, b) => a.x0 - b.x0);
+      const seen = {};
+      for (const c of cells) {
+        if (seen[c.key] && c.key !== 'other') c.key = c.key === 'date' && !seen.vdate ? 'vdate' : 'other';
+        seen[c.key] = true;
+      }
+      const keys = new Set(cells.map(c => c.key));
+      if (!keys.has('date') && keys.has('vdate')) cells.find(c => c.key === 'vdate').key = 'date';
+      const k2 = new Set(cells.map(c => c.key));
+      if (!k2.has('date') || !k2.has('desc')) continue;
+      if (!k2.has('amount') && !k2.has('debit') && !k2.has('credit')) continue;
+      if (!k2.has('balance') && !k2.has('type') && !(k2.has('debit') && k2.has('credit')) && !k2.has('amount')) continue;
+      const ys = win.map(i => i.y);
+      return { y: ln.y, top: Math.max(...ys), bottom: Math.min(...ys), cells, keys: k2 };
+    }
+    return null;
+  }
+
+  function makeColumnizer(cells) {
+    const n = cells.length;
+    const ranges = cells.map((c, i) => ({ key: c.key, lo: c.x0 - 6, hi: i < n - 1 ? cells[i + 1].x0 - 6 : Infinity }));
+    const di = cells.findIndex(c => c.key === 'desc');
+    const dLo = di > 0 ? cells[di - 1].x1 + 1 : -Infinity;
+    const dHi = di < n - 1 ? cells[di + 1].x0 - 1 : Infinity;
+    return function (it) {
+      if (isFinite(dLo) && isFinite(dHi) && it.w > (dHi - dLo) * 1.8) return 'other';
+      const s = it.s.trim();
+      const numeric = isAmountText(s) || /^(Dr|Cr)\.?$/i.test(s);
+      const cx = it.x + it.w / 2;
+      if (it.x > dLo - 3 && cx < dHi && !(numeric && it.x + it.w > dHi - 4)) return 'desc';
+      if (!numeric) {
+        // text cells: the header the item overlaps most (handles centred headers over left-aligned data)
+        let best = null, bo = 0;
+        for (const c of cells) { const o = Math.min(it.x + it.w, c.x1) - Math.max(it.x, c.x0); if (o > bo) { bo = o; best = c; } }
+        if (best && best.key !== 'desc') return best.key;
+      }
+      const ref = numeric ? it.x + it.w - 2 : it.x;
+      for (const r of ranges) if (ref >= r.lo && ref < r.hi) return r.key;
+      return ref < ranges[0].lo ? ranges[0].key : 'other';
+    };
+  }
+
+  // ---------- metadata ----------
+  const IFSC_BANKS = {
+    UTIB: 'Axis Bank', IBKL: 'IDBI Bank', IOBA: 'Indian Overseas Bank', PUNB: 'Punjab National Bank',
+    SBIN: 'State Bank of India', HDFC: 'HDFC Bank', ICIC: 'ICICI Bank', KKBK: 'Kotak Mahindra Bank',
+    CNRB: 'Canara Bank', BARB: 'Bank of Baroda', UBIN: 'Union Bank of India', BKID: 'Bank of India',
+    YESB: 'Yes Bank', INDB: 'IndusInd Bank', FDRL: 'Federal Bank', IDFB: 'IDFC First Bank',
+    MAHB: 'Bank of Maharashtra', CBIN: 'Central Bank of India', UCBA: 'UCO Bank', IDIB: 'Indian Bank',
+    PSIB: 'Punjab & Sind Bank', KARB: 'Karnataka Bank', RATN: 'RBL Bank', BDBL: 'Bandhan Bank',
+    JIOP: 'Jio Payments Bank', AIRP: 'Airtel Payments Bank', IPOS: 'India Post Payments Bank', PYTM: 'Paytm Payments Bank',
+    AUBL: 'AU Small Finance Bank', ESFB: 'Equitas SFB', UJVN: 'Ujjivan SFB', SIBL: 'South Indian Bank', KVBL: 'Karur Vysya Bank',
+    TMBL: 'Tamilnad Mercantile Bank', CIUB: 'City Union Bank', DCBL: 'DCB Bank', CSBK: 'CSB Bank', JAKA: 'J&K Bank', DBSS: 'DBS Bank'
+  };
+  const BANK_GUESS = [
+    [/central bank of india/i, 'Central Bank of India'], [/indian overseas/i, 'Indian Overseas Bank'], [/state bank of india|\bSBI\b/i, 'State Bank of India'],
+    [/punjab national|\bPNB\b/i, 'Punjab National Bank'], [/punjab & sind/i, 'Punjab & Sind Bank'], [/bank of baroda/i, 'Bank of Baroda'],
+    [/bank of maharashtra/i, 'Bank of Maharashtra'], [/union bank/i, 'Union Bank of India'], [/bank of india/i, 'Bank of India'], [/indian bank/i, 'Indian Bank'],
+    [/\bIDBI\b/i, 'IDBI Bank'], [/axis bank/i, 'Axis Bank'], [/hdfc bank/i, 'HDFC Bank'], [/icici bank/i, 'ICICI Bank'], [/kotak/i, 'Kotak Mahindra Bank'],
+    [/canara/i, 'Canara Bank'], [/\bUCO\b/i, 'UCO Bank'], [/yes bank/i, 'Yes Bank'], [/indusind/i, 'IndusInd Bank'], [/federal bank/i, 'Federal Bank'],
+    [/idfc/i, 'IDFC First Bank'], [/jio payments/i, 'Jio Payments Bank'], [/airtel payments/i, 'Airtel Payments Bank'], [/phonepe/i, 'PhonePe'],
+    [/paytm/i, 'Paytm Payments Bank'], [/rbl bank/i, 'RBL Bank'], [/bandhan/i, 'Bandhan Bank']
+  ];
+  const NAME_STOP = /(statement|account|a\/c|bank|branch|date|page|address|ifsc|micr|road|ward|post|dist|tehsil|vill|email|phone|customer|nominee|currency|period|balance|india|from|type|status|code|number|limited bank|pvt\. ltd\. regd|regd|toll|www|http|summary|savings|current|opening|closing|scheme|joint|mobile|city|state|pin\b|cif|branch|holder|transaction|paid|received|upi|wallet|generated|nomination|registered|opposite|market|near|floor|chowk|nagar|colony|sector|gali|lane|mohalla|tah|tahsil|po\b|vill|son|ci\b|gondia|haryana)/i;
+
+  function guessName(lines) {
+    for (const l of lines) {
+      const c = l.replace(/^(m\/s\.?|mr\.?|mrs\.?|ms\.?|shri|smt\.?)\s+/i, '').trim();
+      if (/^[A-Za-z][A-Za-z.&' ]{3,60}$/.test(c.replace(/\b[WSDCM]\/[OS]\b/gi, 'xo')) && c.split(/\s+/).length >= 2 && c.split(/\s+/).length <= 7 && !NAME_STOP.test(c)) return l.trim();
+    }
+    return '';
+  }
+
+  function extractMeta(pages, fileName) {
+    const lines0 = pages.slice(0, 2).flatMap(p => groupLines(p.items, 2.5).map(l => l.text));
+    const all = lines0.join('\n');
+    const meta = {};
+    let m;
+    m = all.match(/\b([A-Z]{4})0[A-Z0-9]{6}\b/);
+    if (m) meta.ifsc = m[0];
+    meta.bank = (meta.ifsc && IFSC_BANKS[meta.ifsc.slice(0, 4)]) || null;
+    if (!meta.bank) {
+      const full = all + ' ' + pages.slice(-1).flatMap(p => p.items.map(i => i.s)).join(' ') + ' ' + (fileName || '');
+      for (const [re, b] of BANK_GUESS) if (re.test(full)) { meta.bank = b; break; }
+    }
+    // account number
+    const accRes = [
+      /(?:account|a\/c|acct)\.?\s*(?:no|number|num)\.?\s*(?:[:\-–.]|\s|is)*\s*([0-9X*]{6,20})/i,
+      /statement of account\s*(?:no\.?)?\s*[:\-–]?\s*([0-9]{6,20})/i,
+      /statement for\s*([0-9X*]{8,20})/i,
+      /\b(\d{11,18})\b/
+    ];
+    for (const re of accRes) { m = all.match(re); if (m && !/^0+$/.test(m[1])) { meta.account = m[1]; break; } }
+    meta.account = meta.account || ((fileName || '').match(/\d{4,}/) || [''])[0];
+    // name
+    m = all.match(/(?:account name|account holder name|a\/c name|customer name|name of (?:the )?(?:customer|account holder)|^name)\s*[:\-]?\s*([A-Za-z][A-Za-z0-9&.,()'\/ \-]{3,60})/im);
+    if (m && !NAME_STOP.test(m[1])) meta.name = m[1];
+    if (!meta.name) meta.name = guessName(lines0.slice(0, 40));
+    if (meta.name) meta.name = meta.name.replace(/\s+/g, ' ').replace(/\s*(customer id|cust id|address|branch|ifsc).*$/i, '').trim();
+    // period
+    const PER = new RegExp(`(${DATE_ANY})\\s*(?:to|-|–|till|upto)\\s*:?\\s*(${DATE_ANY})`, 'i');
+    for (const l of lines0) { m = l.replace(/\s+/g, ' ').match(PER); if (m) { meta.from = parseDate(m[1]); meta.to = parseDate(m[2]); if (meta.from && meta.to) break; } }
+    m = all.match(/opening balance\s*[:\-]?\s*((?:INR|Rs\.?|₹)?\s*-?\s*[\d,]+\.\d{1,2}\s*(?:\(?(?:Dr|Cr)\.?\)?)?)/i);
+    if (m) meta.statedOpening = parseAmount(m[1]);
+    const tail = pages.slice(-2).flatMap(p => groupLines(p.items, 2.5).map(l => l.text)).join('\n');
+    m = (all + '\n' + tail).match(/closing balance\s*[:\-]?\s*((?:INR|Rs\.?|₹)?\s*-?\s*[\d,]+\.\d{1,2}\s*(?:\(?(?:Dr|Cr)\.?\)?)?)/i);
+    if (m) meta.statedClosing = parseAmount(m[1]);
+    return meta;
+  }
+
+  const textChars = pages => pages.reduce((a, p) => a + p.items.reduce((b, i) => b + i.s.length, 0), 0);
+
+  // ---------- main ----------
+  function parseStatement(pages, fileName, opts) {
+    opts = opts || {};
+    const res = { fileName, meta: extractMeta(pages, fileName), transactions: [], warnings: [], ocr: !!opts.ocr };
+    const allText = pages.flatMap(p => p.items.map(i => i.s)).join(' ');
+
+    // per-page headers
+    const hdrs = pages.map(p => findHeaderOnPage(p.items));
+    const first = hdrs.findIndex(Boolean);
+    if (first < 0) {
+      if (/no (records|transactions?) (found|available)|no transactions? (during|in) (the|this) period/i.test(allText)) {
+        res.empty = true;
+        const cb = allText.match(/(?:cleared|available|closing|ledger) balance\s*:?\s*(-?[\d,]+\.\d{1,2}\s*(?:Dr|Cr)?)/i);
+        const bal = cb ? parseAmount(cb[1]) : null;
+        res.summary = summarize(res, [], bal, bal, 0);
+        res.status = 'empty';
+        return res;
+      }
+      res.error = textChars(pages) < 40 * pages.length
+        ? 'No readable text (scanned PDF).'
+        : 'Could not find the transaction table (Date / Description / Amount columns).';
+      return res;
+    }
+    if (!/(account name|holder name|customer name|^name)/im.test(pages.slice(0, 1).flatMap(p => groupLines(p.items, 2.5).map(l => l.text)).join('\n'))) {
+      const above = pages[first].items.filter(i => i.y > hdrs[first].top + 1).sort((a, b) => b.y - a.y || a.x - b.x).map(i => i.s);
+      res.meta.name = guessName(above);
+    }
+    if (!res.meta.ifsc) {
+      // guess the bank from text outside the transaction table (counterparty banks appear inside it)
+      const h = hdrs[first];
+      const outside = pages[first].items.filter(i => i.y > h.top + 1).map(i => i.s)
+        .concat(pages.flatMap(p => groupLines(p.items, 2).filter(l => /regd|registered|toll.?free|www\.|customer care|head office/i.test(l.text)).map(l => l.text)))
+        .join(' ') + ' ' + (fileName || '');
+      for (const [re, b] of BANK_GUESS) if (re.test(outside)) { res.meta.bank = b; break; }
+    }
+    let cur = hdrs[first];
+    const allH = [];
+    pages.forEach(p => p.items.forEach(i => i.h > 0 && i.h < 40 && allH.push(i.h)));
+    const lineH = median(allH) || 8;
+    const records = [];
+    let centerMode = null, lastSpacing = 0;
+    const contGaps = [];
+    for (let p = first; p < pages.length; p++) {
+      if (hdrs[p]) cur = hdrs[p];
+      const col = makeColumnizer(cur.cells);
+      const top = hdrs[p] ? hdrs[p].bottom - 1 : Infinity;
+      const items = pages[p].items.filter(i => i.y < top).map(i => ({ ...i, col: col(i) }));
+      const lines = groupLines(items, Math.max(1.5, lineH * 0.3));
+      let anchors = [];
+      lines.forEach((ln, idx) => {
+        const di = ln.items.filter(i => i.col === 'date' || i.col === 'vdate');
+        if (!di.length) return;
+        const dc = ln.items.filter(i => i.col === 'date').map(i => i.s).join(' ');
+        if (di.some(i => isDate(i.s)) || isDate(dc) || isDate(dc.split(' ').slice(0, 3).join(' '))) anchors.push(idx);
+      });
+      anchors = anchors.filter((a, k) => k === 0 || lines[anchors[k - 1]].y - lines[a].y > lineH * 0.9);
+      if (globalThis.DEBUG) console.log('PAGE', p, 'hdr', cur.cells.map(c => c.key + '@' + Math.round(c.x0)).join(' '), 'lines', lines.length, 'anchors', anchors.length, lines.slice(0, 4).map(l => l.items.map(i => i.col + ':' + i.s).join(' | ')));
+      if (!anchors.length) continue;
+      anchors.forEach(a => { if (lines[a + 1] && !anchors.includes(a + 1)) contGaps.push(lines[a].y - lines[a + 1].y); });
+      const cg = median(contGaps.filter(g => g > 0 && g < lineH * 4));
+      const maxGap = Math.max(lineH * 1.9, 9, cg * 1.35);
+      const isOB = ln => /opening balance|balance b\/?f|brought forward|balance forward/i.test(ln.text);
+      // layout detection: is a row's text centred around its date (lines above the date belong to it)?
+      if (centerMode === null) {
+        let mid = 0, pairs = 0;
+        for (let k = 0; k + 1 < anchors.length; k++) {
+          const A = anchors[k], B = anchors[k + 1];
+          if (B - A < 2) continue;
+          const gaps = []; for (let i = A; i < B; i++) gaps.push(lines[i].y - lines[i + 1].y);
+          const mx = Math.max(...gaps);
+          pairs++;
+          if (gaps[gaps.length - 1] < mx - 1) mid++;
+        }
+        const aboveFirst = anchors[0] > 0 && !isOB(lines[anchors[0] - 1]) && lines[anchors[0] - 1].y - lines[anchors[0]].y < maxGap;
+        if (pairs >= 2) centerMode = mid >= Math.max(1, pairs * 0.2);
+        else if (p === first) centerMode = aboveFirst ? true : (pairs ? false : null);
+        if (centerMode === null && p === pages.length - 1) centerMode = false;
+      }
+      const centered = !!centerMode;
+      const spacings = anchors.slice(1).map((a, k) => lines[anchors[k]].y - lines[a].y);
+      if (spacings.length) lastSpacing = median(spacings);
+      const maxExt = centered ? (lastSpacing ? lastSpacing * 0.6 : lineH * 4) : Infinity;
+      const owner = new Array(lines.length).fill(-1);
+      anchors.forEach(a => (owner[a] = a));
+      lines.forEach((ln, idx) => { if (isOB(ln) && owner[idx] === -1) owner[idx] = -2; });
+      // lines between two anchors
+      for (let k = 0; k + 1 < anchors.length; k++) {
+        const A = anchors[k], B = anchors[k + 1];
+        if (B - A < 2) continue;
+        let cut = B - 1;
+        if (centered) {
+          let big = -1;
+          for (let i = A; i < B; i++) { const g = lines[i].y - lines[i + 1].y; if (g >= big - 0.5) { big = Math.max(big, g); cut = i; } }
+        }
+        for (let i = A + 1; i < B; i++) if (owner[i] === -1) owner[i] = i <= cut ? A : B;
+      }
+      // before the first / after the last anchor: only close, contiguous lines
+      const A0 = anchors[0], AL = anchors[anchors.length - 1];
+      if (centered) for (let i = A0 - 1, prevY = lines[A0].y; i >= 0; i--) {
+        if (owner[i] !== -1 || lines[i].y - prevY > maxGap || lines[i].y - lines[A0].y > maxExt) break;
+        owner[i] = A0; prevY = lines[i].y;
+      }
+      for (let i = AL + 1, prevY = lines[AL].y; i < lines.length; i++) {
+        if (owner[i] !== -1 || prevY - lines[i].y > maxGap || lines[AL].y - lines[i].y > maxExt) break;
+        owner[i] = AL; prevY = lines[i].y;
+      }
+      // top-aligned rows: stop a row at a large gap (page footers, summaries)
+      if (!centered) for (let k = 0; k < anchors.length; k++) {
+        const A = anchors[k], B = k + 1 < anchors.length ? anchors[k + 1] : lines.length;
+        let prevY = lines[A].y, cutoff = false;
+        for (let i = A + 1; i < B; i++) {
+          if (owner[i] !== A) continue;
+          if (cutoff || prevY - lines[i].y > maxGap * 1.6) { owner[i] = -1; cutoff = true; } else prevY = lines[i].y;
+        }
+      }
+      for (const a of anchors) {
+        const recLines = lines.filter((_, i) => owner[i] === a);
+        records.push({ items: recLines.flatMap(l => l.items), keys: cur.keys, page: p + 1 });
+      }
+      // opening-balance row (no date) on this page
+      for (const ln of lines) {
+        if (owner[lines.indexOf(ln)] !== -1 && anchors.includes(lines.indexOf(ln))) continue;
+        if (/opening balance|balance b\/?f|brought forward|balance forward/i.test(ln.text) && res.openingRow == null) {
+          const b = ln.items.filter(i => i.col === 'balance').map(i => i.s).join('');
+          const v = parseAmountX(b);
+          if (v) res.openingRow = v;
+        }
+      }
+    }
+
+    const joinDesc = arr => {
+      let out = '';
+      arr.forEach((i, k) => {
+        if (k === 0) { out = i.s; return; }
+        const prev = arr[k - 1];
+        const glue = Math.abs(prev.y - i.y) >= 1.5 && /\d$/.test(prev.s) && /^\d/.test(i.s);
+        out += (glue ? '' : ' ') + i.s;
+      });
+      return out.replace(/\s+/g, ' ').trim();
+    };
+
+    let txns = [];
+    for (const rec of records) {
+      const by = {};
+      rec.items.sort((a, b) => b.y - a.y || a.x - b.x).forEach(i => (by[i.col] = by[i.col] || []).push(i));
+      const txt = k => (by[k] || []).map(i => i.s).join(' ').replace(/\s+/g, ' ').trim();
+      const amt = k => {
+        const its = (by[k] || []).filter(i => isAmountText(i.s) || /^(Dr|Cr)\.?$/i.test(i.s));
+        if (!its.length) return null;
+        // prefer the value on the anchor line (first numeric)
+        let s = its.map(i => i.s).join(' ');
+        let r = parseAmountX(s);
+        if (!r) r = parseAmountX(its[0].s + (its[1] && /^(Dr|Cr)\.?$/i.test(its[1].s) ? its[1].s : ''));
+        return r;
+      };
+      const dTxt = txt('date');
+      const d = parseDate(dTxt) || parseDate(dTxt.split(' ').slice(0, 3).join(' ')) || (by.date || []).map(i => parseDate(i.s)).find(Boolean) || (by.vdate || []).map(i => parseDate(i.s)).find(Boolean);
+      const vTxt = txt('vdate');
+      const vd = parseDate(vTxt) || (by.vdate || []).map(i => parseDate(i.s)).find(Boolean) || null;
+      const desc = joinDesc(by.desc || []);
+      const bal = amt('balance');
+      const t = { date: d, valueDate: vd, description: desc, chq: txt('chq').replace(/^-+$|^0+$/, ''), debit: 0, credit: 0, balance: bal ? bal.v : null, balSigned: bal ? bal.signed : false, page: rec.page };
+      const typeTxt = txt('type');
+      let dr = 0, cr = 0, un = 0;
+      if (rec.keys.has('debit') || rec.keys.has('credit')) {
+        const a = amt('debit'), b = amt('credit');
+        dr = a ? Math.abs(a.v) : 0; cr = b ? Math.abs(b.v) : 0;
+      }
+      if (rec.keys.has('amount') && !dr && !cr) {
+        const a = amt('amount');
+        const av = a ? Math.abs(a.v) : 0;
+        const amtRaw = txt('amount');
+        if (/^(dr|d\b|debit|withdraw|paid)/i.test(typeTxt)) dr = av;
+        else if (/^(cr|c\b|credit|deposit|received)/i.test(typeTxt)) cr = av;
+        else if (/(Dr|DR)\.?\)?$/.test(amtRaw) || (a && a.signed && a.v < 0)) dr = av;
+        else if (/(Cr|CR)\.?\)?$/.test(amtRaw) || (a && a.signed && a.v > 0 && /^\+/.test(amtRaw))) cr = av;
+        else un = av;
+      }
+      if (dr && cr) { un = 0; t._both = [dr, cr]; }
+      t.debit = dr; t.credit = cr; if (un) t._unsigned = un;
+      if (!t.date) continue;
+      if (!dr && !cr && !un) {
+        if (/opening balance|b\/f|brought forward/i.test(desc) && bal) { if (res.openingRow == null) res.openingRow = bal; continue; }
+        if (/closing balance|c\/f|carried forward|^total/i.test(desc)) continue;
+        if (bal && !/^\s*$/.test(desc)) res.warnings.push(`Row on ${fmtDate(t.date)} (page ${t.page}) has no amount: "${desc.slice(0, 50)}"`);
+        continue;
+      }
+      if (/^(grand |sub )?totals?\s*:?\s*$/i.test(desc)) continue;
+      txns.push(t);
+    }
+
+    // chronological orientation: pick the order in which the balance chain fits better
+    const amtOf = t => t.credit || t.debit || t._unsigned || 0;
+    const fitScore = list => {
+      let s = 0;
+      for (let i = 1; i < list.length; i++) {
+        const a = list[i - 1].balance, b = list[i].balance;
+        if (a == null || b == null) continue;
+        const x = amtOf(list[i]);
+        if ([Math.abs(b - a), Math.abs(b + a), Math.abs(Math.abs(b) - Math.abs(a))].some(dv => Math.abs(dv - x) < 0.02)) s++;
+      }
+      return s;
+    };
+    if (txns.length > 1) {
+      const rev = [...txns].reverse();
+      const f = fitScore(txns), r = fitScore(rev);
+      if (r > f || (r === f && txns[0].date > txns[txns.length - 1].date)) txns = rev;
+    }
+
+    // walk the running balance: verify, orient amounts, fix sign-less balances
+    const tol = 0.05;
+    const hasBal = txns.some(t => t.balance != null);
+    let opening = null, breaks = 0, fixed = 0;
+    const firstB = txns.find(t => t.balance != null);
+    if (res.openingRow) opening = res.openingRow.v;
+    else if (txns.length && txns[0].balance != null) {
+      const t0 = txns[0], a0 = amtOf(t0);
+      const dir = t0.credit || (t0._unsigned && false) ? 1 : -1;
+      const cands = [t0.balance - dir * a0, t0.balance + dir * a0];
+      const so = res.meta.statedOpening;
+      if (so != null && cands.some(c => Math.abs(c - so) < tol)) opening = so;
+      else if (t0._unsigned) opening = null; // resolved below
+      else opening = cands[0];
+    } else if (res.meta.statedOpening != null) opening = res.meta.statedOpening;
+
+    let run = opening;
+    for (let i = 0; i < txns.length; i++) {
+      const t = txns[i];
+      const A = amtOf(t);
+      const parsedDir = t.credit ? 1 : t.debit ? -1 : 0; // 0 = unknown
+      if (t._both) { // both columns read: trust the balance
+        const [d0, c0] = t._both;
+        if (run != null && t.balance != null) {
+          const net = t.balance - run;
+          if (Math.abs(net - (c0 - d0)) < tol) { /* genuine both */ }
+          else if (Math.abs(net - c0) < tol) { t.debit = 0; } else if (Math.abs(net + d0) < tol) { t.credit = 0; }
+        }
+      }
+      if (t.balance == null) {
+        if (!parsedDir && t._unsigned) { t.credit = t._unsigned; res.warnings.push(`Direction unknown for ${fmtDate(t.date)} ${A} — treated as credit.`); }
+        if (run != null) {
+          run = round2(run + t.credit - t.debit);
+          if (hasBal) { t.balance = run; t.balCalc = true; if (opts.ocr) { t.fixed = 'balance'; fixed++; } }
+        }
+        delete t._unsigned; delete t._both; continue;
+      }
+      if (run == null) {
+        // first row with unknown opening & unknown direction: look at the next row to decide nothing; assume as parsed
+        if (!parsedDir) t.credit = A;
+        run = round2(t.balance - t.credit + t.debit);
+        opening = opening == null ? run : opening;
+      }
+      const b = t.balance;
+      const dirs = parsedDir ? [parsedDir, -parsedDir] : [1, -1];
+      const bs = t.balSigned ? [b] : [b, -b];
+      let ok = false;
+      if (t._both && t.debit && t.credit) {
+        ok = Math.abs(run + t.credit - t.debit - b) < tol;
+      } else {
+        outer: for (const dv of dirs) for (const bb of bs) {
+          if (Math.abs(run + dv * A - bb) < tol) {
+            if (dv > 0) { t.credit = A; t.debit = 0; } else { t.debit = A; t.credit = 0; }
+            if (dv !== parsedDir && parsedDir) t.swapped = true;
+            t.balance = bb; ok = true; break outer;
+          }
+        }
+      }
+      if (!ok) {
+        // OCR repair: decide whether the amount or the balance was misread, using the next row
+        const nx = txns[i + 1];
+        const fits = (from, n) => n && n.balance != null && [1, -1].some(dv => [n.balance, -n.balance].some(nb => Math.abs(from + dv * amtOf(n) - nb) < tol));
+        if (!parsedDir && t._unsigned) { t.credit = A; }
+        if (opts.ocr && run != null) {
+          const exp = round2(run + t.credit - t.debit);
+          const bAbsMatch = t.balSigned ? b : (Math.abs(b - run) <= Math.abs(-b - run) ? b : -b);
+          if (fits(exp, nx) && !fits(bAbsMatch, nx)) { t.balance = exp; t.fixed = 'balance'; fixed++; ok = true; }
+          else if (!nx || fits(bAbsMatch, nx)) {
+            const net = round2(bAbsMatch - run);
+            if (net >= 0) { t.credit = net; t.debit = 0; } else { t.debit = -net; t.credit = 0; }
+            t.balance = bAbsMatch; t.fixed = 'amount'; fixed++; ok = true;
+          }
+        }
+        if (!ok) {
+          breaks++; t.mismatch = true;
+          if (!parsedDir) { t.credit = A; }
+          if (!t.balSigned && run != null && Math.abs(-b - run) < Math.abs(b - run)) t.balance = -b;
+        }
+      }
+      run = t.balance;
+      delete t._unsigned; delete t._both;
+    }
+    if (opening == null && res.meta.statedOpening != null) opening = res.meta.statedOpening;
+
+    // Some banks print rows out of posting order (balance still follows the posting order).
+    // If the chain broke, try to rebuild the posting sequence from the balances themselves.
+    if (breaks && txns.every(t => t.balance != null && (t.credit || t.debit))) {
+      const re = chainReorder(txns, tol);
+      if (re) {
+        txns = re.list; opening = re.opening; breaks = 0;
+        txns.forEach(t => { delete t.mismatch; });
+        res.reordered = true;
+        res.notes = (res.notes || []).concat('Rows were printed out of posting order by the bank; they are arranged here by running balance.');
+      }
+    }
+    if (opening != null) opening = round2(opening);
+
+    res.transactions = txns.map(t => ({ ...t, debit: round2(t.debit), credit: round2(t.credit) }));
+    const lastB = [...txns].reverse().find(t => t.balance != null);
+    const closing = hasBal ? (lastB ? round2(lastB.balance) : null) : (opening != null ? round2(opening + txns.reduce((s, t) => s + t.credit - t.debit, 0)) : null);
+    res.summary = summarize(res, res.transactions, opening, closing, breaks);
+    res.summary.fixed = fixed;
+    res.summary.hasBalance = hasBal;
+    if (!txns.length) res.error = 'The table was found but no transaction rows could be read.';
+    res.status = res.error ? 'error' : !hasBal ? 'nobal' : breaks ? 'warn' : 'ok';
+    if (breaks) {
+      const bad = res.transactions.filter(t => t.mismatch).slice(0, 3).map(t => `${fmtDate(t.date)} (p.${t.page})`).join(', ');
+      res.warnings.unshift(`${breaks} row(s) don't follow the running balance — check: ${bad}${breaks > 3 ? '…' : ''}`);
+    }
+    if (fixed) res.warnings.unshift(`OCR: ${fixed} value(s) were corrected using the running balance — please spot-check.`);
+    if (res.meta.statedClosing != null && closing != null && Math.abs(res.meta.statedClosing - closing) > 0.05 && Math.abs(Math.abs(res.meta.statedClosing) - Math.abs(closing)) > 0.05)
+      res.warnings.push(`Closing balance printed on the statement (${res.meta.statedClosing}) differs from the last row balance (${closing}).`);
+    return res;
+  }
+
+  function chainReorder(txns, tol) {
+    const key = v => Math.round(v * 100);
+    const pre = t => key(t.balance - t.credit + t.debit);
+    // also allow the alternative sign of unsigned balances
+    const posts = new Map();
+    txns.forEach(t => { const k = key(t.balance); posts.set(k, (posts.get(k) || 0) + 1); });
+    const pres = txns.map(pre);
+    const cnt = new Map(posts);
+    let start = null;
+    for (const p of pres) { const c = cnt.get(p) || 0; if (c > 0) cnt.set(p, c - 1); else if (start === null) start = p; else return null; }
+    if (start === null) return null;
+    const byPre = new Map();
+    txns.forEach((t, i) => { const k = pres[i]; if (!byPre.has(k)) byPre.set(k, []); byPre.get(k).push(i); });
+    const used = new Array(txns.length).fill(false);
+    const out = [];
+    let cur = start;
+    for (let n = 0; n < txns.length; n++) {
+      const c = (byPre.get(cur) || []).find(i => !used[i]);
+      if (c == null) return null;
+      used[c] = true; out.push(txns[c]); cur = key(txns[c].balance);
+    }
+    return { list: out, opening: start / 100 };
+  }
+
+  function summarize(res, txns, opening, closing, breaks) {
+    const sumCr = round2(txns.reduce((s, t) => s + t.credit, 0));
+    const sumDr = round2(txns.reduce((s, t) => s + t.debit, 0));
+    const calcClosing = opening != null ? round2(opening + sumCr - sumDr) : null;
+    const dates = txns.map(t => t.date).filter(Boolean).sort((a, b) => a - b);
+    return {
+      opening, closing, calcClosing, totalCredit: sumCr, totalDebit: sumDr,
+      creditCount: txns.filter(t => t.credit).length, debitCount: txns.filter(t => t.debit).length,
+      reconciled: closing != null && calcClosing != null && Math.abs(closing - calcClosing) < 0.05 && !breaks,
+      difference: closing != null && calcClosing != null ? round2(closing - calcClosing) : null,
+      chainBreaks: breaks,
+      from: res.meta.from || dates[0] || null, to: res.meta.to || dates[dates.length - 1] || null
+    };
+  }
+
+  // ---------- classification ----------
+  const STOP = /^(neft|rtgs|imps|upi|inb|ift|ib|attn|fast|urgent|na|self|outward|inward|dr|cr|out|in|chrg|charge|charges|tparty transfer|bill payment|clg|by clg|to|by|ach|ipay|inst|nrtgs|ret|neft_out|neft_chrg|trf|transfer|payment|ecs|nach|mmt|ift|net|ac|a\/c|branch)$/i;
+  const BANKISH = /\b(bank|sbi|icici|hdfc|axis|idbi|kotak|canara|punjab national|pnb|indian overseas|iob|baroda|boi|indusind|federal|reserve|rbi|ltd bank|banking|razorpay|nsdl)\b/i;
+
+  function counterparty(desc) {
+    const pp = desc.match(/^(?:paid to|received from|payment to|payment from|money sent to|money received from)\s+(.+?)(?:\s+transaction id|\s+utr|$)/i);
+    if (pp) return pp[1].replace(/^[.\s]+/, '').replace(/\s+/g, ' ').trim().toUpperCase();
+    const segs = desc.replace(/\s+/g, ' ').split(/[\/:_|]|-{2,}|\s-\s|(?<=[A-Za-z0-9])-(?=[A-Za-z0-9])/);
+    for (let s of segs) {
+      s = s.replace(/^(TO|BY|FROM)\s+/i, '').replace(/^(NEFT|RTGS|IMPS|UPI|IFT)\s+(CR\s+|DR\s+)?/i, '').replace(/[@#].*$/, '').trim();
+      s = s.split(' ').filter(tok => (tok.match(/\d/g) || []).length < 4).join(' ').trim();
+      if (s.length < 3 || STOP.test(s)) continue;
+      if (/^(neft|rtgs|imps|upi|ift|nach|ach|mb|inet|ib|mmt|by|to)([\s_\-]*(cr|dr|in|out|imps|neft|transfer|trf))*$/i.test(s)) continue;
+      const letters = (s.match(/[A-Za-z]/g) || []).length;
+      const digits = (s.match(/\d/g) || []).length;
+      if (letters < 5 || letters / (letters + digits) < 0.75) continue;
+      if (BANKISH.test(s)) continue;
+      if (/^[A-Z]{4,5}$/.test(s) && (IFSC_BANKS[s.slice(0, 4)] || /^RBIS|^IOBA/.test(s))) continue;
+      if (/^(payment towards|invoice|on ac|bill no|sent using|paid via|payment from|payment to|int trf|trf frm|trf to|upi\/rrn|mandate|you are paying|collect request|upiintent|transaction id|utr no)/i.test(s)) continue;
+      return s.replace(/\s+/g, ' ').replace(/[\s\-.,&]+$/, '').toUpperCase();
+    }
+    return '';
+  }
+
+  function channel(desc, chq) {
+    const d = desc.toUpperCase();
+    if (/RTGS/.test(d)) return 'RTGS';
+    if (/NEFT/.test(d)) return 'NEFT';
+    if (/IMPS/.test(d)) return 'IMPS';
+    if (/UPI/.test(d)) return 'UPI';
+    if (/\bIFT\b|TPARTY|TRANSFER|\bTRF\b/.test(d)) return 'Internal Transfer';
+    if (/\bACH\b|NACH|ECS/.test(d)) return 'ACH/NACH';
+    if (/CLG|CLEARING|^\d{6}-|CHQ|CHEQUE/.test(d) || chq) return 'Cheque/Clearing';
+    if (/\bDD\b/.test(d)) return 'Demand Draft';
+    if (/CASH|ATM|CWDR/.test(d)) return 'Cash';
+    if (/INT\.|INTEREST|CHARGE|CHRG|CHG/.test(d)) return 'Bank Internal';
+    return 'Other';
+  }
+
+  function categorize(t, own, party) {
+    const d = t.description, flat = d.replace(/\s+/g, '');
+    if (/int\.?coll|^int\.?:|interest|int\.?pd|^sbint/i.test(flat) || /^intt\b/i.test(d) || /int\.?\s*coll|int\.\s*:|\binterest\b|int\.?pd/i.test(d)) return t.debit ? 'Interest Charged' : 'Interest Received';
+    if (/charge|chrg|chg\b|incidental|sms|commission|stamp duty|\bgst\b|annual fee|ledger folio/i.test(d)) return 'Bank Charges';
+    if (/^ret-|return|reversal|dishon|cancl|cancel/i.test(d)) return 'Returns / Reversals';
+    if (own.isOwn(d, party == null ? counterparty(d) : party)) return t.credit ? 'Own Account Transfer In' : 'Own Account Transfer Out';
+    if (/loan|\bemi\b|ach-dr|repayment|nach/i.test(d)) return 'Loan / EMI';
+    return t.credit ? 'Receipts' : 'Payments';
+  }
+
+  function ownMatcher(accounts, keywords) {
+    const accs = accounts.filter(a => a && a.length >= 9);
+    const kws = keywords.map(k => k.toUpperCase().replace(/[^A-Z0-9]/g, '')).filter(k => k.length >= 4);
+    return {
+      accountIn(desc) { const flat = desc.toUpperCase().replace(/[^A-Z0-9]/g, ''); return accs.find(a => flat.includes(a)) || null; },
+      isOwn(desc, party) {
+        const D = desc.toUpperCase();
+        const flat = D.replace(/[^A-Z0-9]/g, '');
+        if (/\/SELF\b|\bSELF\//.test(D)) return true;
+        if (accs.some(a => flat.includes(a))) return true;
+        const P = (party || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+        return !!P && kws.some(k => P.includes(k) || (P.length >= 6 && k.startsWith(P)));
+      }
+    };
+  }
+
+  function defaultOwnKeyword(name) {
+    const w = (name || '').toUpperCase().replace(/[^A-Z ]/g, ' ').split(/\s+/).filter(x => x.length >= 3 && !/^(THE|AND|LTD|LIMITED|PVT|PRIVATE|LLP|M\/S)$/.test(x));
+    if (!w.length) return '';
+    return w.length > 1 ? `${w[0]} ${w[1].slice(0, 4)}` : w[0];
+  }
+
+  const api = { parseStatement, parseAmount, parseDate, fmtDate, ocrWordsToItems, textChars, counterparty, channel, categorize, ownMatcher, defaultOwnKeyword };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  else root.StatementParser = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+/* ---- xlsx-writer.js ---- */
+/*
+ * Minimal styled XLSX writer (no dependencies). Supports: multiple sheets, fonts, fills, borders,
+ * alignment, number formats, merged cells, formulas (with cached values), column widths, row heights,
+ * frozen panes, auto-filter, tab colours, hidden gridlines and print setup.
+ */
+(function (root) {
+  'use strict';
+
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))
+    // strip characters that are illegal in XML 1.0
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F￾￿]/g, '');
+  const colName = c => { let s = ''; c++; while (c) { const m = (c - 1) % 26; s = String.fromCharCode(65 + m) + s; c = Math.floor((c - 1) / 26); } return s; };
+  const ref = (r, c) => colName(c) + (r + 1);
+  const excelDate = d => (Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) - Date.UTC(1899, 11, 30)) / 86400000;
+
+  class Sheet {
+    constructor(wb, name, opts) {
+      this.wb = wb; this.name = name; this.opts = opts || {};
+      this.rows = new Map(); this.merges = []; this.widths = []; this.heights = {};
+    }
+    set(r, c, v, style) {
+      if (!this.rows.has(r)) this.rows.set(r, new Map());
+      this.rows.get(r).set(c, { v, s: style == null ? 0 : style });
+      return this;
+    }
+    style(r, c, style) { const row = this.rows.get(r); if (row && row.has(c)) row.get(c).s = style; else this.set(r, c, null, style); }
+    fill(r0, c0, r1, c1, style) { for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) { const row = this.rows.get(r); if (!row || !row.has(c)) this.set(r, c, null, style); } }
+    merge(r0, c0, r1, c1) { this.merges.push(`${ref(r0, c0)}:${ref(r1, c1)}`); }
+    width(c, w) { this.widths[c] = w; }
+    height(r, h) { this.heights[r] = h; }
+
+    xml() {
+      const o = this.opts;
+      let x = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">';
+      x += '<sheetPr>' + (o.tabColor ? `<tabColor rgb="FF${o.tabColor}"/>` : '') + (o.fitWidth ? '<pageSetUpPr fitToPage="1"/>' : '') + '</sheetPr>';
+      let maxR = 0, maxC = 0;
+      this.rows.forEach((row, r) => { maxR = Math.max(maxR, r); row.forEach((_, c) => (maxC = Math.max(maxC, c))); });
+      x += `<dimension ref="A1:${ref(maxR, maxC)}"/>`;
+      x += `<sheetViews><sheetView workbookViewId="0"${o.gridlines === false ? ' showGridLines="0"' : ''}${o.zoom ? ` zoomScale="${o.zoom}"` : ''}${o.selected ? ' tabSelected="1"' : ''}>`;
+      if (o.freeze) {
+        const [fr, fc] = o.freeze;
+        const tl = ref(fr, fc);
+        const pane = fr && fc ? 'bottomRight' : fr ? 'bottomLeft' : 'topRight';
+        x += `<pane${fc ? ` xSplit="${fc}"` : ''}${fr ? ` ySplit="${fr}"` : ''} topLeftCell="${tl}" activePane="${pane}" state="frozen"/><selection pane="${pane}" activeCell="${tl}" sqref="${tl}"/>`;
+      }
+      x += '</sheetView></sheetViews><sheetFormatPr defaultRowHeight="15"/>';
+      if (this.widths.length) {
+        x += '<cols>';
+        this.widths.forEach((w, c) => { if (w) x += `<col min="${c + 1}" max="${c + 1}" width="${w}" customWidth="1"/>`; });
+        x += '</cols>';
+      }
+      x += '<sheetData>';
+      [...this.rows.keys()].sort((a, b) => a - b).forEach(r => {
+        const row = this.rows.get(r);
+        const h = this.heights[r];
+        x += `<row r="${r + 1}"${h ? ` ht="${h}" customHeight="1"` : ''}>`;
+        [...row.keys()].sort((a, b) => a - b).forEach(c => {
+          const { v, s } = row.get(c);
+          const a = ref(r, c), st = s ? ` s="${s}"` : '';
+          if (v == null || v === '') x += `<c r="${a}"${st}/>`;
+          else if (typeof v === 'number') x += isFinite(v) ? `<c r="${a}"${st}><v>${v}</v></c>` : `<c r="${a}"${st}/>`;
+          else if (typeof v === 'boolean') x += `<c r="${a}"${st} t="b"><v>${v ? 1 : 0}</v></c>`;
+          else if (v instanceof Date) x += `<c r="${a}"${st}><v>${excelDate(v)}</v></c>`;
+          else if (typeof v === 'object' && v.f) {
+            const cv = v.v;
+            if (typeof cv === 'string') x += `<c r="${a}"${st} t="str"><f>${esc(v.f)}</f><v>${esc(cv)}</v></c>`;
+            else x += `<c r="${a}"${st}><f>${esc(v.f)}</f>${cv != null && isFinite(cv) ? `<v>${cv}</v>` : ''}</c>`;
+          } else x += `<c r="${a}"${st} t="inlineStr"><is><t xml:space="preserve">${esc(v)}</t></is></c>`;
+        });
+        x += '</row>';
+      });
+      x += '</sheetData>';
+      if (o.autoFilter) x += `<autoFilter ref="${o.autoFilter}"/>`;
+      if (this.merges.length) x += `<mergeCells count="${this.merges.length}">${this.merges.map(m => `<mergeCell ref="${m}"/>`).join('')}</mergeCells>`;
+      x += '<pageMargins left="0.4" right="0.4" top="0.5" bottom="0.5" header="0.3" footer="0.3"/>';
+      x += `<pageSetup paperSize="9" orientation="${o.landscape ? 'landscape' : 'portrait'}"${o.fitWidth ? ' fitToWidth="1" fitToHeight="0"' : ''}/>`;
+      if (o.footer !== false) x += `<headerFooter><oddFooter>&amp;L&amp;8${esc(this.wb.title || '')}&amp;R&amp;8Page &amp;P of &amp;N</oddFooter></headerFooter>`;
+      x += '</worksheet>';
+      return x;
+    }
+  }
+
+  class Workbook {
+    constructor(title) {
+      this.title = title || ''; this.sheets = [];
+      this.fonts = ['<font><sz val="10"/><color rgb="FF1F2933"/><name val="Calibri"/><family val="2"/></font>'];
+      this.fills = ['<fill><patternFill patternType="none"/></fill>', '<fill><patternFill patternType="gray125"/></fill>'];
+      this.borders = ['<border><left/><right/><top/><bottom/><diagonal/></border>'];
+      this.numFmts = []; this.xfs = ['<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>'];
+      this.cache = new Map(); this.prints = [];
+    }
+    addSheet(name, opts) {
+      let n = String(name).replace(/[\\\/?*\[\]:]/g, ' ').slice(0, 31).trim() || 'Sheet';
+      const base = n; let i = 2;
+      while (this.sheets.some(s => s.name.toLowerCase() === n.toLowerCase())) n = `${base.slice(0, 27)} (${i++})`;
+      const s = new Sheet(this, n, opts); this.sheets.push(s); return s;
+    }
+    /** style({font:{b,i,sz,color,name,u}, fill:'RRGGBB', border:{all|top|bottom|left|right:'thin'|'medium'|'double'|'hair', color}, numFmt:'#,##0.00', align:{h,v,wrap,indent}}) */
+    style(def) {
+      const key = JSON.stringify(def);
+      if (this.cache.has(key)) return this.cache.get(key);
+      const f = def.font || {};
+      const fontXml = `<font>${f.b ? '<b/>' : ''}${f.i ? '<i/>' : ''}${f.u ? '<u/>' : ''}<sz val="${f.sz || 10}"/><color rgb="FF${f.color || '1F2933'}"/><name val="${f.name || 'Calibri'}"/><family val="2"/></font>`;
+      let fontId = this.fonts.indexOf(fontXml); if (fontId < 0) { this.fonts.push(fontXml); fontId = this.fonts.length - 1; }
+      let fillId = 0;
+      if (def.fill) {
+        const fx = `<fill><patternFill patternType="solid"><fgColor rgb="FF${def.fill}"/><bgColor indexed="64"/></patternFill></fill>`;
+        fillId = this.fills.indexOf(fx); if (fillId < 0) { this.fills.push(fx); fillId = this.fills.length - 1; }
+      }
+      let borderId = 0;
+      if (def.border) {
+        const b = def.border, col = b.color || 'D5D9DE';
+        const side = n => { const st = b[n] || b.all; return st ? `<${n} style="${st}"><color rgb="FF${(b[n + 'Color']) || col}"/></${n}>` : `<${n}/>`; };
+        const bx = `<border>${side('left')}${side('right')}${side('top')}${side('bottom')}<diagonal/></border>`;
+        borderId = this.borders.indexOf(bx); if (borderId < 0) { this.borders.push(bx); borderId = this.borders.length - 1; }
+      }
+      let numFmtId = 0;
+      if (def.numFmt) {
+        const builtin = { '0': 1, '0.00': 2, '#,##0': 3, '#,##0.00': 4, '0%': 9, '0.00%': 10, '@': 49 };
+        if (builtin[def.numFmt] != null) numFmtId = builtin[def.numFmt];
+        else {
+          let i = this.numFmts.indexOf(def.numFmt);
+          if (i < 0) { this.numFmts.push(def.numFmt); i = this.numFmts.length - 1; }
+          numFmtId = 164 + i;
+        }
+      }
+      const a = def.align || {};
+      const alignXml = (a.h || a.v || a.wrap || a.indent) ? `<alignment${a.h ? ` horizontal="${a.h}"` : ''}${a.v ? ` vertical="${a.v}"` : ''}${a.wrap ? ' wrapText="1"' : ''}${a.indent ? ` indent="${a.indent}"` : ''}/>` : '';
+      const xf = `<xf numFmtId="${numFmtId}" fontId="${fontId}" fillId="${fillId}" borderId="${borderId}" xfId="0"${numFmtId ? ' applyNumberFormat="1"' : ''}${fontId ? ' applyFont="1"' : ''}${fillId ? ' applyFill="1"' : ''}${borderId ? ' applyBorder="1"' : ''}${alignXml ? ' applyAlignment="1">' + alignXml + '</xf>' : '/>'}`;
+      this.xfs.push(xf);
+      const id = this.xfs.length - 1;
+      this.cache.set(key, id);
+      return id;
+    }
+    stylesXml() {
+      return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+        (this.numFmts.length ? `<numFmts count="${this.numFmts.length}">${this.numFmts.map((f, i) => `<numFmt numFmtId="${164 + i}" formatCode="${esc(f)}"/>`).join('')}</numFmts>` : '') +
+        `<fonts count="${this.fonts.length}">${this.fonts.join('')}</fonts>` +
+        `<fills count="${this.fills.length}">${this.fills.join('')}</fills>` +
+        `<borders count="${this.borders.length}">${this.borders.join('')}</borders>` +
+        '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>' +
+        `<cellXfs count="${this.xfs.length}">${this.xfs.join('')}</cellXfs>` +
+        '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>';
+    }
+    files() {
+      const S = this.sheets;
+      const f = {};
+      f['[Content_Types].xml'] = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>' +
+        S.map((s, i) => `<Override PartName="/xl/worksheets/sheet${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('') +
+        '<Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/><Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/></Types>';
+      f['_rels/.rels'] = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/></Relationships>';
+      const now = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
+      f['docProps/core.xml'] = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><dc:title>${esc(this.title)}</dc:title><dc:creator>Bank Statement Summary</dc:creator><dcterms:created xsi:type="dcterms:W3CDTF">${now}</dcterms:created><dcterms:modified xsi:type="dcterms:W3CDTF">${now}</dcterms:modified></cp:coreProperties>`;
+      f['docProps/app.xml'] = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties"><Application>Microsoft Excel</Application></Properties>';
+      const defined = S.map((s, i) => s.opts.printTitles ? `<definedName name="_xlnm.Print_Titles" localSheetId="${i}">'${s.name.replace(/'/g, "''")}'!$${s.opts.printTitles[0] + 1}:$${s.opts.printTitles[1] + 1}</definedName>` : '')
+        .concat(S.map((s, i) => s.opts.autoFilter ? `<definedName name="_xlnm._FilterDatabase" localSheetId="${i}" hidden="1">'${s.name.replace(/'/g, "''")}'!${s.opts.autoFilter.replace(/([A-Z]+)(\d+)/g, '$$$1$$$2')}</definedName>` : '')).join('');
+      f['xl/workbook.xml'] = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><bookViews><workbookView activeTab="0"/></bookViews><sheets>' +
+        S.map((s, i) => `<sheet name="${esc(s.name)}" sheetId="${i + 1}" r:id="rId${i + 1}"/>`).join('') + '</sheets>' +
+        (defined ? `<definedNames>${defined}</definedNames>` : '') + '<calcPr calcId="191029" fullCalcOnLoad="1"/></workbook>';
+      f['xl/_rels/workbook.xml.rels'] = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+        S.map((s, i) => `<Relationship Id="rId${i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`).join('') +
+        `<Relationship Id="rId${S.length + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`;
+      S.forEach((s, i) => { f[`xl/worksheets/sheet${i + 1}.xml`] = s.xml(); });
+      f['xl/styles.xml'] = this.stylesXml();
+      return f;
+    }
+    async toBytes() { return zip(this.files()); }
+  }
+
+  // ---------- zip (deflate when CompressionStream is available, else store) ----------
+  const CRC = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+  const crc32 = b => { let c = 0xFFFFFFFF; for (let i = 0; i < b.length; i++) c = CRC[(c ^ b[i]) & 0xFF] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; };
+  async function deflate(data) {
+    if (typeof CompressionStream === 'undefined') return null;
+    try {
+      const cs = new CompressionStream('deflate-raw');
+      const stream = new Blob([data]).stream().pipeThrough(cs);
+      return new Uint8Array(await new Response(stream).arrayBuffer());
+    } catch (e) { return null; }
+  }
+  async function zip(files) {
+    const enc = new TextEncoder();
+    const parts = [], central = [];
+    let offset = 0;
+    const d = new Date();
+    const dosTime = (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1);
+    const dosDate = ((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate();
+    for (const [name, content] of Object.entries(files)) {
+      const raw = typeof content === 'string' ? enc.encode(content) : content;
+      const nameB = enc.encode(name);
+      const comp = await deflate(raw);
+      const method = comp && comp.length < raw.length ? 8 : 0;
+      const body = method ? comp : raw;
+      const crc = crc32(raw);
+      const lh = new DataView(new ArrayBuffer(30));
+      lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true); lh.setUint16(6, 0x0800, true); lh.setUint16(8, method, true);
+      lh.setUint16(10, dosTime, true); lh.setUint16(12, dosDate, true); lh.setUint32(14, crc, true);
+      lh.setUint32(18, body.length, true); lh.setUint32(22, raw.length, true); lh.setUint16(26, nameB.length, true); lh.setUint16(28, 0, true);
+      parts.push(new Uint8Array(lh.buffer), nameB, body);
+      const ch = new DataView(new ArrayBuffer(46));
+      ch.setUint32(0, 0x02014b50, true); ch.setUint16(4, 20, true); ch.setUint16(6, 20, true); ch.setUint16(8, 0x0800, true); ch.setUint16(10, method, true);
+      ch.setUint16(12, dosTime, true); ch.setUint16(14, dosDate, true); ch.setUint32(16, crc, true); ch.setUint32(20, body.length, true);
+      ch.setUint32(24, raw.length, true); ch.setUint16(28, nameB.length, true); ch.setUint32(42, offset, true);
+      central.push(new Uint8Array(ch.buffer), nameB);
+      offset += 30 + nameB.length + body.length;
+    }
+    const cdSize = central.reduce((a, p) => a + p.length, 0);
+    const end = new DataView(new ArrayBuffer(22));
+    end.setUint32(0, 0x06054b50, true); end.setUint16(8, Object.keys(files).length, true); end.setUint16(10, Object.keys(files).length, true);
+    end.setUint32(12, cdSize, true); end.setUint32(16, offset, true);
+    const all = [...parts, ...central, new Uint8Array(end.buffer)];
+    const out = new Uint8Array(all.reduce((a, p) => a + p.length, 0));
+    let o = 0; for (const p of all) { out.set(p, o); o += p.length; }
+    return out;
+  }
+
+  const api = { Workbook, colName, ref };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  else root.XlsxWriter = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+/* ---- report.js ---- */
+/*
+ * Builds the formatted Excel report from the summarised data model.
+ * model = { title, holder, generated: Date, accounts: [...], txns: [...] }  (see app.js -> buildModel)
+ */
+(function (root) {
+  'use strict';
+  const XW = root.XlsxWriter || (typeof require !== 'undefined' ? require('./xlsx-writer.js') : null);
+
+  const C = {
+    brand: '0F5C4D', brandDark: '0B3F35', brandSoft: 'E7F1EE', band: 'F6F8F7', line: 'DDE3E1', ink: '1F2933', muted: '6B7280',
+    cr: '11734F', dr: 'B3261E', okBg: 'DFF3E8', okFg: '11734F', warnBg: 'FFF1D6', warnFg: '9A5B00', badBg: 'FDE4E1', badFg: 'B3261E', infoBg: 'E8EEF8', infoFg: '33507A',
+    white: 'FFFFFF'
+  };
+  const NUM = '#,##0.00;[Red]-#,##0.00';
+  const NUM0 = '#,##0.00;[Red]-#,##0.00;"–"';
+  const INT = '#,##0';
+  const DATE = 'dd-mmm-yyyy';
+  const MONTH = 'mmm-yyyy';
+
+  function styles(wb) {
+    const b = { all: 'thin', color: C.line };
+    const S = {};
+    S.title = wb.style({ font: { b: true, sz: 18, color: C.white }, fill: C.brandDark, align: { v: 'center', indent: 1 } });
+    S.titleFill = wb.style({ fill: C.brandDark });
+    S.sub = wb.style({ font: { sz: 10, color: 'CFE3DD' }, fill: C.brandDark, align: { v: 'center', indent: 1 } });
+    S.section = wb.style({ font: { b: true, sz: 11, color: C.brand }, border: { bottom: 'medium', color: C.brand } });
+    S.sectionFill = wb.style({ border: { bottom: 'medium', color: C.brand } });
+    S.kpiLabel = wb.style({ font: { sz: 8.5, color: C.muted, b: true }, fill: C.brandSoft, align: { h: 'left', v: 'bottom', indent: 1 }, border: { top: 'thin', left: 'thin', right: 'thin', color: 'C9DDD7' } });
+    S.kpiVal = wb.style({ font: { sz: 14, b: true, color: C.ink }, fill: C.brandSoft, numFmt: NUM, align: { h: 'left', v: 'center', indent: 1 }, border: { bottom: 'thin', left: 'thin', right: 'thin', color: 'C9DDD7' } });
+    S.kpiInt = wb.style({ font: { sz: 14, b: true, color: C.ink }, fill: C.brandSoft, numFmt: INT, align: { h: 'left', v: 'center', indent: 1 }, border: { bottom: 'thin', left: 'thin', right: 'thin', color: 'C9DDD7' } });
+    S.kpiCr = wb.style({ font: { sz: 14, b: true, color: C.cr }, fill: C.brandSoft, numFmt: NUM, align: { h: 'left', v: 'center', indent: 1 }, border: { bottom: 'thin', left: 'thin', right: 'thin', color: 'C9DDD7' } });
+    S.kpiDr = wb.style({ font: { sz: 14, b: true, color: C.dr }, fill: C.brandSoft, numFmt: NUM, align: { h: 'left', v: 'center', indent: 1 }, border: { bottom: 'thin', left: 'thin', right: 'thin', color: 'C9DDD7' } });
+    S.th = wb.style({ font: { b: true, color: C.white, sz: 10 }, fill: C.brand, align: { h: 'left', v: 'center', wrap: true }, border: { all: 'thin', color: C.brand } });
+    S.thR = wb.style({ font: { b: true, color: C.white, sz: 10 }, fill: C.brand, align: { h: 'right', v: 'center', wrap: true }, border: { all: 'thin', color: C.brand } });
+    S.thC = wb.style({ font: { b: true, color: C.white, sz: 10 }, fill: C.brand, align: { h: 'center', v: 'center', wrap: true }, border: { all: 'thin', color: C.brand } });
+    for (const band of [0, 1]) {
+      const fill = band ? C.band : undefined;
+      const k = band ? 'B' : '';
+      S['td' + k] = wb.style({ fill, border: b, align: { v: 'top', indent: 1 } });
+      S['tdWrap' + k] = wb.style({ fill, border: b, align: { v: 'top', wrap: true, indent: 1 } });
+      S['tdC' + k] = wb.style({ fill, border: b, align: { h: 'center', v: 'top' } });
+      S['tdTxt' + k] = wb.style({ fill, border: b, numFmt: '@', align: { v: 'top', indent: 1 } });
+      S['num' + k] = wb.style({ fill, border: b, numFmt: NUM, align: { h: 'right', v: 'top', indent: 1 } });
+      S['num0' + k] = wb.style({ fill, border: b, numFmt: NUM0, align: { h: 'right', v: 'top', indent: 1 } });
+      S['int' + k] = wb.style({ fill, border: b, numFmt: INT, align: { h: 'center', v: 'top' } });
+      S['date' + k] = wb.style({ fill, border: b, numFmt: DATE, align: { h: 'center', v: 'top' } });
+      S['month' + k] = wb.style({ fill, border: b, numFmt: MONTH, align: { h: 'left', v: 'top' } });
+      S['cr' + k] = wb.style({ fill, border: b, numFmt: NUM0, font: { color: C.cr }, align: { h: 'right', v: 'top', indent: 1 } });
+      S['dr' + k] = wb.style({ fill, border: b, numFmt: NUM0, font: { color: C.dr }, align: { h: 'right', v: 'top', indent: 1 } });
+      S['pct' + k] = wb.style({ fill, border: b, numFmt: '0.0%', align: { v: 'top' } });
+    }
+    const fl = { fill: C.warnBg, border: b, align: { v: 'top', indent: 1 } };
+    S.flag = wb.style({ ...fl, font: { color: C.warnFg, b: true } });
+    S.flagTd = wb.style(fl);
+    S.flagWrap = wb.style({ ...fl, align: { v: 'top', wrap: true } });
+    S.flagNum = wb.style({ ...fl, numFmt: NUM, align: { h: 'right', v: 'top', indent: 1 } });
+    S.flagNum0 = wb.style({ ...fl, numFmt: NUM0, align: { h: 'right', v: 'top', indent: 1 } });
+    S.flagDate = wb.style({ ...fl, numFmt: DATE, align: { h: 'center', v: 'top' } });
+    S.flagTxt = wb.style({ ...fl, numFmt: '@' });
+    S.flagInt = wb.style({ ...fl, numFmt: INT, align: { h: 'center', v: 'top' } });
+    const tot = { fill: C.brandSoft, font: { b: true }, border: { top: 'medium', bottom: 'double', left: 'thin', right: 'thin', color: C.brand } };
+    S.tot = wb.style(tot);
+    S.totNum = wb.style({ ...tot, numFmt: NUM });
+    S.totInt = wb.style({ ...tot, numFmt: INT, align: { h: 'center' } });
+    S.totCr = wb.style({ ...tot, numFmt: NUM, font: { b: true, color: C.cr } });
+    S.totDr = wb.style({ ...tot, numFmt: NUM, font: { b: true, color: C.dr } });
+    S.ok = wb.style({ fill: C.okBg, font: { b: true, color: C.okFg, sz: 9 }, border: b, align: { h: 'center', v: 'top' } });
+    S.warn = wb.style({ fill: C.warnBg, font: { b: true, color: C.warnFg, sz: 9 }, border: b, align: { h: 'center', v: 'top' } });
+    S.bad = wb.style({ fill: C.badBg, font: { b: true, color: C.badFg, sz: 9 }, border: b, align: { h: 'center', v: 'top' } });
+    S.info = wb.style({ fill: C.infoBg, font: { b: true, color: C.infoFg, sz: 9 }, border: b, align: { h: 'center', v: 'top' } });
+    S.label = wb.style({ font: { color: C.muted }, border: { bottom: 'hair', color: C.line } });
+    S.value = wb.style({ font: { b: true }, border: { bottom: 'hair', color: C.line } });
+    S.valueNum = wb.style({ font: { b: true }, numFmt: NUM, border: { bottom: 'hair', color: C.line } });
+    S.valueDate = wb.style({ font: { b: true }, numFmt: DATE, align: { h: 'left' }, border: { bottom: 'hair', color: C.line } });
+    S.flowLabel = wb.style({ border: { bottom: 'hair', color: C.line }, align: { indent: 1 } });
+    S.flowLess = wb.style({ font: { color: C.muted, i: true }, border: { bottom: 'hair', color: C.line }, align: { indent: 2 } });
+    S.flowNum = wb.style({ numFmt: NUM, border: { bottom: 'hair', color: C.line } });
+    S.flowLessNum = wb.style({ numFmt: NUM, font: { color: C.muted, i: true }, border: { bottom: 'hair', color: C.line } });
+    S.flowTot = wb.style({ font: { b: true }, fill: C.brandSoft, border: { top: 'thin', bottom: 'thin', color: C.brand }, align: { indent: 1 } });
+    S.flowTotNum = wb.style({ font: { b: true }, fill: C.brandSoft, numFmt: NUM, border: { top: 'thin', bottom: 'thin', color: C.brand } });
+    S.note = wb.style({ font: { color: C.ink, sz: 9 }, align: { wrap: true, v: 'top' } });
+    S.noteHead = wb.style({ font: { b: true, sz: 9 }, align: { v: 'top' } });
+    S.muted = wb.style({ font: { i: true, color: C.muted, sz: 9 } });
+    S.groupHead = wb.style({ font: { b: true, color: C.brandDark }, fill: 'D4E6E0', border: { all: 'thin', color: C.line } });
+    S.groupHeadFill = wb.style({ fill: 'D4E6E0', border: { all: 'thin', color: C.line } });
+    S.sub = S.sub;
+    S.subTot = wb.style({ font: { b: true }, fill: C.brandSoft, border: { top: 'thin', bottom: 'thin', left: 'thin', right: 'thin', color: C.line } });
+    S.subTotNum = wb.style({ font: { b: true }, fill: C.brandSoft, numFmt: NUM, border: { top: 'thin', bottom: 'thin', left: 'thin', right: 'thin', color: C.line } });
+    S.subTotInt = wb.style({ font: { b: true }, fill: C.brandSoft, numFmt: INT, align: { h: 'center' }, border: { top: 'thin', bottom: 'thin', left: 'thin', right: 'thin', color: C.line } });
+    return S;
+  }
+
+  const R = (r, c) => XW.ref(r, c);
+  const statusStyle = (S, st) => st === 'ok' ? S.ok : st === 'warn' ? S.warn : st === 'error' ? S.bad : S.info;
+  const fmtD = d => d ? `${String(d.getUTCDate()).padStart(2, '0')}-${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getUTCMonth()]}-${d.getUTCFullYear()}` : '';
+  const sum = (a, f) => Math.round(a.reduce((s, x) => s + (f(x) || 0), 0) * 100) / 100;
+
+  function titleBlock(ws, S, lastCol, title, subtitle) {
+    ws.set(0, 0, title, S.title); ws.fill(0, 1, 0, lastCol, S.titleFill); ws.merge(0, 0, 0, lastCol); ws.height(0, 34);
+    ws.set(1, 0, subtitle, S.sub); ws.fill(1, 1, 1, lastCol, S.sub); ws.merge(1, 0, 1, lastCol); ws.height(1, 20);
+  }
+  function section(ws, S, r, c0, c1, text) {
+    ws.set(r, c0, text.toUpperCase(), S.section); ws.fill(r, c0 + 1, r, c1, S.sectionFill); ws.height(r, 22);
+  }
+  function header(ws, S, r, cols) {
+    cols.forEach((h, c) => ws.set(r, c, h.t, h.r ? S.thR : h.c ? S.thC : S.th));
+    ws.height(r, 30);
+  }
+
+  function build(model) {
+    const wb = new XW.Workbook(model.title);
+    const S = styles(wb);
+    const A = model.accounts, T = model.txns;
+    const periodFrom = A.map(a => a.from).filter(Boolean).sort((a, b) => a - b)[0];
+    const periodTo = A.map(a => a.to).filter(Boolean).sort((a, b) => b - a)[0];
+    const subtitle = [model.holder && `Account holder: ${model.holder}`, periodFrom && `Period: ${fmtD(periodFrom)} to ${fmtD(periodTo)}`,
+      `${A.length} account${A.length === 1 ? '' : 's'}${model.statementCount ? ` from ${model.statementCount} statement${model.statementCount === 1 ? '' : 's'}` : ''} · ${T.length} transactions`, `Generated ${model.generated.toLocaleString('en-IN')}`].filter(Boolean).join('   |   ');
+
+    // ======================= SUMMARY =======================
+    {
+      const ws = wb.addSheet('Summary', { gridlines: false, tabColor: C.brand, landscape: true, fitWidth: true, selected: true });
+      const widths = [5, 22, 19, 30, 12.5, 12.5, 18, 9, 18, 9, 18, 18, 26];
+      widths.forEach((w, i) => ws.width(i, w));
+      const last = widths.length - 1;
+      titleBlock(ws, S, last, 'Bank Statement Summary', subtitle);
+
+      // KPI tiles (rows 3-4)
+      const totCr = sum(A, a => a.totalCredit), totDr = sum(A, a => a.totalDebit);
+      const op = sum(A, a => a.opening), cl = sum(A, a => a.closing);
+      const firstRow = 9, lastRow = firstRow + A.length - 1, totRow = lastRow + 1;
+      const tiles = [
+        ['ACCOUNTS', A.length, S.kpiInt, null],
+        ['TOTAL CREDITS', totCr, S.kpiCr, `I${totRow + 1}`],
+        ['TOTAL DEBITS', totDr, S.kpiDr, `K${totRow + 1}`],
+        ['NET FLOW', Math.round((totCr - totDr) * 100) / 100, S.kpiVal, `I${totRow + 1}-K${totRow + 1}`],
+        ['OPENING BALANCE', op, S.kpiVal, `G${totRow + 1}`],
+        ['CLOSING BALANCE', cl, S.kpiVal, `L${totRow + 1}`]
+      ];
+      const spans = [[1, 2], [3, 4], [5, 6], [7, 8], [9, 10], [11, 12]];
+      tiles.forEach((t, i) => {
+        const [c0, c1] = spans[i];
+        ws.set(3, c0, t[0], S.kpiLabel); ws.fill(3, c0 + 1, 3, c1, S.kpiLabel); ws.merge(3, c0, 3, c1);
+        ws.set(4, c0, t[3] ? { f: t[3], v: t[1] } : t[1], t[2]); ws.fill(4, c0 + 1, 4, c1, t[2]); ws.merge(4, c0, 4, c1);
+      });
+      ws.height(3, 18); ws.height(4, 28);
+
+      section(ws, S, 6, 0, last, 'Account-wise summary');
+      header(ws, S, 8, [{ t: '#', c: 1 }, { t: 'Bank' }, { t: 'Account No.' }, { t: 'Account Holder' }, { t: 'From', c: 1 }, { t: 'To', c: 1 },
+        { t: 'Opening Balance', r: 1 }, { t: 'No. of Credits', c: 1 }, { t: 'Total Credits', r: 1 }, { t: 'No. of Debits', c: 1 }, { t: 'Total Debits', r: 1 }, { t: 'Closing Balance', r: 1 }, { t: 'Status', c: 1 }]);
+      A.forEach((a, i) => {
+        const r = firstRow + i, k = i % 2 ? 'B' : '';
+        ws.set(r, 0, i + 1, S['int' + k]); ws.set(r, 1, a.bank, S['td' + k]); ws.set(r, 2, a.account, S['tdTxt' + k]); ws.set(r, 3, a.name || '', S['td' + k]);
+        ws.set(r, 4, a.from || '', S['date' + k]); ws.set(r, 5, a.to || '', S['date' + k]);
+        ws.set(r, 6, a.opening, S['num' + k]); ws.set(r, 7, a.creditCount, S['int' + k]); ws.set(r, 8, a.totalCredit, S['cr' + k]);
+        ws.set(r, 9, a.debitCount, S['int' + k]); ws.set(r, 10, a.totalDebit, S['dr' + k]); ws.set(r, 11, a.closing, S['num' + k]);
+        ws.set(r, 12, a.statusText, statusStyle(S, a.status));
+      });
+      const tr = totRow;
+      ws.set(tr, 0, '', S.tot); ws.set(tr, 1, 'TOTAL', S.tot); ws.fill(tr, 2, tr, 5, S.tot);
+      const col = c => XW.colName(c);
+      [[6, op, S.totNum], [7, sum(A, a => a.creditCount), S.totInt], [8, totCr, S.totCr], [9, sum(A, a => a.debitCount), S.totInt], [10, totDr, S.totDr], [11, cl, S.totNum]]
+        .forEach(([c, v, st]) => ws.set(tr, c, A.length ? { f: `SUM(${col(c)}${firstRow + 1}:${col(c)}${lastRow + 1})`, v } : v, st));
+      ws.set(tr, 12, '', S.tot);
+      ws.height(tr, 20);
+
+      // Consolidated flow
+      let r = tr + 3;
+      section(ws, S, r, 0, last, 'Consolidated cash flow'); r += 2;
+      const ownIn = sum(A, a => a.ownIn), ownOut = sum(A, a => a.ownOut);
+      const flow = [
+        ['Total credits (all statements)', `I${tr + 1}`, totCr, S.flowLabel, S.flowNum],
+        ['Less: transfers between own accounts', null, ownIn, S.flowLess, S.flowLessNum],
+        ['External receipts', 'r-2 - r-1', totCr - ownIn, S.flowTot, S.flowTotNum],
+        ['Total debits (all statements)', `K${tr + 1}`, totDr, S.flowLabel, S.flowNum],
+        ['Less: transfers between own accounts', null, ownOut, S.flowLess, S.flowLessNum],
+        ['External payments', 'r-2 - r-1', totDr - ownOut, S.flowTot, S.flowTotNum],
+        ['Net external flow (receipts − payments)', 'NET', totCr - ownIn - (totDr - ownOut), S.flowTot, S.flowTotNum]
+      ];
+      const rows = [];
+      flow.forEach((f, i) => {
+        const rr = r + i; rows.push(rr);
+        ws.set(rr, 1, f[0], f[3]); ws.fill(rr, 2, rr, 3, f[3]); ws.merge(rr, 1, rr, 3);
+        let formula = f[1];
+        if (formula === 'r-2 - r-1') formula = `E${rr - 1}-E${rr}`;
+        if (formula === 'NET') formula = `E${rows[2] + 1}-E${rows[5] + 1}`;
+        ws.set(rr, 4, formula ? { f: formula, v: Math.round(f[2] * 100) / 100 } : Math.round(f[2] * 100) / 100, f[4]);
+        ws.fill(rr, 5, rr, 5, f[4]); ws.merge(rr, 4, rr, 5);
+      });
+      ws.set(r + flow.length, 1, 'Own-account transfers are matched on account numbers of the uploaded statements, "SELF" transfers and the own-company keywords.', S.muted);
+      r += flow.length + 3;
+
+      // Notes
+      const notes = A.filter(a => a.notes && a.notes.length);
+      if (notes.length) {
+        section(ws, S, r, 0, last, 'Notes & checks'); r += 2;
+        notes.forEach(a => {
+          a.notes.forEach(n => {
+            ws.set(r, 1, `${a.bank} ${a.account}`, S.noteHead);
+            ws.set(r, 3, n, S.note); ws.merge(r, 3, r, last);
+            ws.height(r, n.length > 120 ? 28 : 15);
+            r++;
+          });
+        });
+      }
+    }
+
+    // ======================= MONTHLY =======================
+    {
+      const ws = wb.addSheet('Monthly', { gridlines: false, tabColor: '2F7A68', landscape: true, fitWidth: true, freeze: [4, 0], printTitles: [3, 3] });
+      [16, 34, 10, 18, 10, 18, 18].forEach((w, i) => ws.width(i, w));
+      titleBlock(ws, S, 6, 'Month-wise Summary', subtitle);
+      header(ws, S, 3, [{ t: 'Month' }, { t: 'Account' }, { t: 'No. of Credits', c: 1 }, { t: 'Credits', r: 1 }, { t: 'No. of Debits', c: 1 }, { t: 'Debits', r: 1 }, { t: 'Net (Cr − Dr)', r: 1 }]);
+      const mkey = d => d ? d.getUTCFullYear() * 100 + d.getUTCMonth() : 0;
+      const months = [...new Set(T.map(t => mkey(t.date)))].sort((a, b) => a - b);
+      let r = 4;
+      const totalRows = [];
+      months.forEach(m => {
+        const mt = T.filter(t => mkey(t.date) === m);
+        const md = new Date(Date.UTC(Math.floor(m / 100), m % 100, 1));
+        const accs = [...new Set(mt.map(t => t.accLabel))];
+        const start = r;
+        accs.forEach((al, i) => {
+          const at = mt.filter(t => t.accLabel === al), k = i % 2 ? 'B' : '';
+          const cr = sum(at, t => t.credit), dr = sum(at, t => t.debit);
+          ws.set(r, 0, md, S['month' + k]); ws.set(r, 1, al, S['td' + k]);
+          ws.set(r, 2, at.filter(t => t.credit).length, S['int' + k]); ws.set(r, 3, cr, S['cr' + k]);
+          ws.set(r, 4, at.filter(t => t.debit).length, S['int' + k]); ws.set(r, 5, dr, S['dr' + k]);
+          ws.set(r, 6, { f: `D${r + 1}-F${r + 1}`, v: Math.round((cr - dr) * 100) / 100 }, S['num' + k]);
+          r++;
+        });
+        const cr = sum(mt, t => t.credit), dr = sum(mt, t => t.debit);
+        ws.set(r, 0, md, wb.style({ font: { b: true }, fill: C.brandSoft, numFmt: MONTH, border: { all: 'thin', color: C.line } }));
+        ws.set(r, 1, 'Month total', S.subTot);
+        ws.set(r, 2, { f: `SUM(C${start + 1}:C${r})`, v: mt.filter(t => t.credit).length }, S.subTotInt);
+        ws.set(r, 3, { f: `SUM(D${start + 1}:D${r})`, v: cr }, S.subTotNum);
+        ws.set(r, 4, { f: `SUM(E${start + 1}:E${r})`, v: mt.filter(t => t.debit).length }, S.subTotInt);
+        ws.set(r, 5, { f: `SUM(F${start + 1}:F${r})`, v: dr }, S.subTotNum);
+        ws.set(r, 6, { f: `D${r + 1}-F${r + 1}`, v: Math.round((cr - dr) * 100) / 100 }, S.subTotNum);
+        totalRows.push(r + 1);
+        r += 2;
+      });
+      if (months.length) {
+        const cr = sum(T, t => t.credit), dr = sum(T, t => t.debit);
+        ws.set(r, 0, 'GRAND TOTAL', S.tot); ws.set(r, 1, '', S.tot);
+        const sumOf = c => totalRows.map(x => `${c}${x}`).join(',');
+        ws.set(r, 2, { f: `SUM(${sumOf('C')})`, v: T.filter(t => t.credit).length }, S.totInt);
+        ws.set(r, 3, { f: `SUM(${sumOf('D')})`, v: cr }, S.totCr);
+        ws.set(r, 4, { f: `SUM(${sumOf('E')})`, v: T.filter(t => t.debit).length }, S.totInt);
+        ws.set(r, 5, { f: `SUM(${sumOf('F')})`, v: dr }, S.totDr);
+        ws.set(r, 6, { f: `D${r + 1}-F${r + 1}`, v: Math.round((cr - dr) * 100) / 100 }, S.totNum);
+      }
+    }
+
+    // ======================= CATEGORIES =======================
+    {
+      const ws = wb.addSheet('Categories', { gridlines: false, tabColor: '4C8C7A', landscape: true, fitWidth: true });
+      [30, 10, 18, 18, 18, 12].forEach((w, i) => ws.width(i, w));
+      titleBlock(ws, S, 5, 'Category Summary', subtitle);
+      const cats = groupBy(T, t => t.category).sort((a, b) => (b.cr + b.dr) - (a.cr + a.dr));
+      const gross = sum(T, t => t.credit + t.debit) || 1;
+      section(ws, S, 3, 0, 5, 'All statements');
+      header(ws, S, 5, [{ t: 'Category' }, { t: 'Txns', c: 1 }, { t: 'Credits', r: 1 }, { t: 'Debits', r: 1 }, { t: 'Net (Cr − Dr)', r: 1 }, { t: 'Share of flow', r: 1 }]);
+      let r = 6;
+      cats.forEach((g, i) => {
+        const k = i % 2 ? 'B' : '';
+        ws.set(r, 0, g.key, S['td' + k]); ws.set(r, 1, g.n, S['int' + k]); ws.set(r, 2, g.cr, S['cr' + k]); ws.set(r, 3, g.dr, S['dr' + k]);
+        ws.set(r, 4, { f: `C${r + 1}-D${r + 1}`, v: Math.round((g.cr - g.dr) * 100) / 100 }, S['num' + k]);
+        ws.set(r, 5, (g.cr + g.dr) / gross, S['pct' + k]);
+        r++;
+      });
+      if (cats.length) totalRow(ws, S, r, 6, ['TOTAL', 'n', 'cr', 'dr', 'net', ''], { n: T.length, cr: sum(T, t => t.credit), dr: sum(T, t => t.debit) });
+      r += 3;
+      section(ws, S, r, 0, 5, 'By account'); r += 2;
+      header(ws, S, r, [{ t: 'Category' }, { t: 'Txns', c: 1 }, { t: 'Credits', r: 1 }, { t: 'Debits', r: 1 }, { t: 'Net (Cr − Dr)', r: 1 }, { t: '' }]); r++;
+      groupBy(T, t => t.accLabel).forEach(acc => {
+        ws.set(r, 0, acc.key, S.groupHead); ws.fill(r, 1, r, 5, S.groupHeadFill); ws.merge(r, 0, r, 5); r++;
+        groupBy(acc.items, t => t.category).sort((a, b) => (b.cr + b.dr) - (a.cr + a.dr)).forEach((g, i) => {
+          const k = i % 2 ? 'B' : '';
+          ws.set(r, 0, g.key, wb.style({ fill: k ? C.band : undefined, border: { all: 'thin', color: C.line }, align: { indent: 1 } }));
+          ws.set(r, 1, g.n, S['int' + k]); ws.set(r, 2, g.cr, S['cr' + k]); ws.set(r, 3, g.dr, S['dr' + k]);
+          ws.set(r, 4, { f: `C${r + 1}-D${r + 1}`, v: Math.round((g.cr - g.dr) * 100) / 100 }, S['num' + k]); ws.set(r, 5, '', S['td' + k]);
+          r++;
+        });
+      });
+    }
+
+    // ======================= COUNTERPARTIES =======================
+    {
+      const ws = wb.addSheet('Counterparties', { gridlines: false, tabColor: '6AA391', landscape: true, fitWidth: true, freeze: [4, 1], printTitles: [3, 3] });
+      const lastC = 7;
+      [40, 9, 18, 18, 18, 13, 13, 26].forEach((w, i) => ws.width(i, w));
+      titleBlock(ws, S, lastC, 'Counterparty Summary', subtitle);
+      header(ws, S, 3, [{ t: 'Counterparty' }, { t: 'Txns', c: 1 }, { t: 'Received (Cr)', r: 1 }, { t: 'Paid (Dr)', r: 1 }, { t: 'Net (Cr − Dr)', r: 1 }, { t: 'First Date', c: 1 }, { t: 'Last Date', c: 1 }, { t: 'Main Category' }]);
+      const ps = groupBy(T, t => t.party).sort((a, b) => (b.cr + b.dr) - (a.cr + a.dr));
+      let r = 4;
+      ps.forEach((g, i) => {
+        const k = i % 2 ? 'B' : '';
+        const ds = g.items.map(t => t.date).filter(Boolean).sort((a, b) => a - b);
+        const cat = groupBy(g.items, t => t.category).sort((a, b) => b.n - a.n)[0];
+        ws.set(r, 0, g.key, S['td' + k]); ws.set(r, 1, g.n, S['int' + k]); ws.set(r, 2, g.cr, S['cr' + k]); ws.set(r, 3, g.dr, S['dr' + k]);
+        ws.set(r, 4, { f: `C${r + 1}-D${r + 1}`, v: Math.round((g.cr - g.dr) * 100) / 100 }, S['num' + k]);
+        ws.set(r, 5, ds[0] || '', S['date' + k]); ws.set(r, 6, ds[ds.length - 1] || '', S['date' + k]); ws.set(r, 7, cat ? cat.key : '', S['td' + k]);
+        r++;
+      });
+      if (ps.length) {
+        totalRow(ws, S, r, 4, ['TOTAL', 'n', 'cr', 'dr', 'net', '', '', ''], { n: T.length, cr: sum(T, t => t.credit), dr: sum(T, t => t.debit) });
+        ws.opts.autoFilter = `A4:H${r}`;
+      }
+    }
+
+    // ======================= ALL TRANSACTIONS =======================
+    {
+      const ws = wb.addSheet('All Transactions', { gridlines: false, tabColor: '8DB8AA', landscape: true, fitWidth: true, freeze: [4, 0], printTitles: [3, 3] });
+      const cols = [{ t: 'Bank', w: 20 }, { t: 'Account No.', w: 18 }, { t: 'Date', w: 12, c: 1 }, { t: 'Value Date', w: 12, c: 1 }, { t: 'Description', w: 56 }, { t: 'Chq / Ref No.', w: 16 },
+        { t: 'Debit', w: 15, r: 1 }, { t: 'Credit', w: 15, r: 1 }, { t: 'Balance', w: 17, r: 1 }, { t: 'Channel', w: 14 }, { t: 'Category', w: 24 }, { t: 'Counterparty', w: 30 }, { t: 'Check', w: 22 }, { t: 'Source File', w: 34 }];
+      cols.forEach((c, i) => ws.width(i, c.w));
+      titleBlock(ws, S, cols.length - 1, 'All Transactions', subtitle);
+      header(ws, S, 3, cols);
+      txnRows(ws, S, T, 4, true);
+      const end = 4 + T.length;
+      if (T.length) {
+        ws.set(end, 0, 'TOTAL', S.tot); ws.fill(end, 1, end, 5, S.tot);
+        ws.set(end, 6, { f: `SUBTOTAL(9,G5:G${end})`, v: sum(T, t => t.debit) }, S.totDr);
+        ws.set(end, 7, { f: `SUBTOTAL(9,H5:H${end})`, v: sum(T, t => t.credit) }, S.totCr);
+        ws.fill(end, 8, end, cols.length - 1, S.tot);
+        ws.opts.autoFilter = `A4:N${end}`;
+      }
+    }
+
+    return wb;
+  }
+
+  function txnRows(ws, S, list, r0, withAcc) {
+    list.forEach((t, i) => {
+      const r = r0 + i, k = i % 2 ? 'B' : '', fl = !!t.flag;
+      const st = n => fl ? (S['flag' + n] || S.flagTd) : S[(n === 'Td' ? 'td' : n.charAt(0).toLowerCase() + n.slice(1)) + k];
+      let c = 0;
+      if (withAcc) { ws.set(r, c++, t.bank, fl ? S.flagTd : S['td' + k]); ws.set(r, c++, t.account, fl ? S.flagTxt : S['tdTxt' + k]); }
+      else ws.set(r, c++, t.seq, fl ? S.flagInt : S['int' + k]);
+      ws.set(r, c++, t.date || '', fl ? S.flagDate : S['date' + k]);
+      ws.set(r, c++, t.valueDate || '', fl ? S.flagDate : S['date' + k]);
+      ws.set(r, c++, t.description, fl ? S.flagWrap : S['tdWrap' + k]);
+      ws.set(r, c++, t.chq || '', fl ? S.flagTxt : S['tdTxt' + k]);
+      ws.set(r, c++, t.debit || '', fl ? S.flagNum0 : S['dr' + k]);
+      ws.set(r, c++, t.credit || '', fl ? S.flagNum0 : S['cr' + k]);
+      ws.set(r, c++, t.balance == null ? '' : t.balance, fl ? S.flagNum : S['num' + k]);
+      if (withAcc) ws.set(r, c++, t.channel, fl ? S.flagTd : S['td' + k]);
+      ws.set(r, c++, t.category, fl ? S.flagTd : S['td' + k]);
+      ws.set(r, c++, t.party, fl ? S.flagTd : S['td' + k]);
+      ws.set(r, c++, t.flag || '', fl ? S.flag : S['td' + k]);
+      if (withAcc) ws.set(r, c++, t.file || '', fl ? S.flagTd : S['td' + k]);
+      void st;
+    });
+  }
+
+  function totalRow(ws, S, r, firstData, spec, v) {
+    const col = c => XW.colName(c);
+    spec.forEach((s, c) => {
+      if (s === 'n') ws.set(r, c, { f: `SUM(${col(c)}${firstData + 1}:${col(c)}${r})`, v: v.n }, S.totInt);
+      else if (s === 'cr') ws.set(r, c, { f: `SUM(${col(c)}${firstData + 1}:${col(c)}${r})`, v: v.cr }, S.totCr);
+      else if (s === 'dr') ws.set(r, c, { f: `SUM(${col(c)}${firstData + 1}:${col(c)}${r})`, v: v.dr }, S.totDr);
+      else if (s === 'net') ws.set(r, c, { f: `${col(c - 2)}${r + 1}-${col(c - 1)}${r + 1}`, v: Math.round((v.cr - v.dr) * 100) / 100 }, S.totNum);
+      else ws.set(r, c, s, S.tot);
+    });
+  }
+
+  function groupBy(list, kf) {
+    const m = new Map();
+    list.forEach(t => {
+      const k = kf(t);
+      const g = m.get(k) || { key: k, n: 0, cr: 0, dr: 0, items: [] };
+      g.n++; g.cr += t.credit || 0; g.dr += t.debit || 0; g.items.push(t); m.set(k, g);
+    });
+    return [...m.values()].map(g => ({ ...g, cr: Math.round(g.cr * 100) / 100, dr: Math.round(g.dr * 100) / 100 }));
+  }
+
+  const api = { build };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  else root.StatementReport = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+/* ---- app.js ---- */
+/* UI, OCR fallback and Excel export. Everything runs in the browser — no file leaves the computer. */
+(function () {
+  'use strict';
+  const P = window.StatementParser;
+  const PDFJS_VER = '3.11.174';
+  const TESSERACT_URL = 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
+  const OCR_SCALE = 200 / 72; // render scanned pages at ~200 dpi
+  // pdf.js wraps a cross-origin worker URL automatically and falls back to the main thread if workers are blocked
+  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS_VER}/pdf.worker.min.js`;
+
+  const $ = id => document.getElementById(id);
+  const state = { statements: [], txns: [], accounts: [], queue: Promise.resolve() };
+  let uid = 0;
+
+  const inr = n => (n == null || isNaN(n)) ? '—' : Number(n).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const short = acc => acc ? String(acc).slice(-4) : '????';
+  const label = st => `${st.meta.bank || 'Bank'} ${short(st.meta.account)}`;
+  const isIncluded = st => !st.error && st.transactions && !st.duplicateOf && st.status !== 'busy';
+
+  // ---------- file intake ----------
+  const drop = $('drop'), fileIn = $('file');
+  drop.addEventListener('click', () => fileIn.click());
+  drop.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') fileIn.click(); });
+  drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('over'); });
+  drop.addEventListener('dragleave', () => drop.classList.remove('over'));
+  drop.addEventListener('drop', e => { e.preventDefault(); drop.classList.remove('over'); handleFiles(e.dataTransfer.files); });
+  fileIn.addEventListener('change', () => { handleFiles(fileIn.files); fileIn.value = ''; });
+
+  function handleFiles(list) {
+    const files = [...list].filter(f => /\.pdf$/i.test(f.name) || f.type === 'application/pdf');
+    const sts = files.map(f => { const st = { id: ++uid, fileName: f.name, status: 'busy', progress: 'Queued', meta: {} }; state.statements.push(st); return [st, f]; });
+    renderFiles();
+    // process one file at a time (keeps memory low with big scanned files)
+    for (const [st, f] of sts) state.queue = state.queue.then(() => processFile(st, f));
+    state.queue = state.queue.then(() => {
+      if (!$('ownKw').value.trim()) $('ownKw').value = suggestKeywords();
+      recompute();
+    });
+  }
+
+  async function processFile(st, file) {
+    if (!state.statements.includes(st)) return;
+    const setProgress = t => { st.progress = t; renderFiles(); };
+    let doc;
+    try {
+      setProgress('Reading PDF…');
+      doc = await openPdf(file);
+      const pages = await readText(doc);
+      let res = P.parseStatement(pages, file.name);
+      const chars = P.textChars(pages);
+      const scanned = chars < 120 * doc.numPages;
+      const needOcr = res.error && !res.empty && (scanned || chars < 600 * doc.numPages);
+      if (needOcr) {
+        const ocrPages = await ocrDocument(doc, (p, n) => setProgress(`OCR page ${p} of ${n}…`));
+        const ocrRes = P.parseStatement(ocrPages, file.name, { ocr: true });
+        if (!ocrRes.error || res.error) res = ocrRes;
+      }
+      Object.assign(st, res);
+      st.status = res.error ? 'error' : res.status;
+    } catch (err) {
+      st.status = 'error';
+      const name = err && err.name;
+      st.error = name === 'PasswordException' ? 'Password protected — password not given or incorrect.'
+        : name === 'InvalidPDFException' ? 'Not a valid PDF file.'
+        : /tesseract|ocr|importScripts|network/i.test(String(err && err.message)) ? 'OCR engine could not be loaded (needs internet the first time).'
+        : 'Could not read PDF: ' + ((err && err.message) || err);
+    } finally {
+      if (doc) try { doc.destroy(); } catch (e) { /* ignore */ }
+    }
+    st.progress = '';
+    markDuplicates();
+    renderFiles();
+    recompute();
+  }
+
+  async function openPdf(file) {
+    const data = new Uint8Array(await file.arrayBuffer());
+    const task = pdfjsLib.getDocument({ data, isEvalSupported: false });
+    let cancelled = false;
+    task.onPassword = (cb, reason) => {
+      const pw = prompt(`${file.name} is password protected.${reason === 2 ? ' Wrong password, try again.' : ''}\nEnter password (Cancel to skip):`);
+      if (pw === null) { cancelled = true; task.destroy(); } else cb(pw);
+    };
+    try {
+      const doc = await task.promise;
+      doc._fileName = file.name;
+      return doc;
+    } catch (e) {
+      if (cancelled) { const x = new Error('Password required'); x.name = 'PasswordException'; throw x; }
+      throw e;
+    }
+  }
+
+  async function readText(doc) {
+    const pages = [];
+    for (let p = 1; p <= doc.numPages; p++) {
+      const page = await doc.getPage(p);
+      const tc = await page.getTextContent();
+      pages.push({
+        items: tc.items.filter(i => i.str && i.str.trim()).map(i => ({
+          x: i.transform[4], y: i.transform[5], w: i.width,
+          h: i.height || Math.hypot(i.transform[2], i.transform[3]), s: i.str.trim()
+        }))
+      });
+      page.cleanup();
+    }
+    return pages;
+  }
+
+  // ---------- OCR (scanned or outlined PDFs) ----------
+  let ocrWorkerP = null;
+  function loadScript(src) {
+    return new Promise((res, rej) => {
+      const s = document.createElement('script');
+      s.src = src; s.onload = res; s.onerror = () => rej(new Error('OCR engine (tesseract) failed to load — check internet connection.'));
+      document.head.appendChild(s);
+    });
+  }
+  async function ocrWorker() {
+    if (!ocrWorkerP) {
+      ocrWorkerP = (async () => {
+        if (!window.Tesseract) await loadScript(TESSERACT_URL);
+        const w = await Tesseract.createWorker('eng', 1);
+        await w.setParameters({ preserve_interword_spaces: '1', tessedit_pageseg_mode: '3' });
+        return w;
+      })();
+      ocrWorkerP.catch(() => { ocrWorkerP = null; });
+    }
+    return ocrWorkerP;
+  }
+  function wordsOf(data) {
+    if (data.words && data.words.length) return data.words;
+    const out = [];
+    (data.blocks || []).forEach(b => (b.paragraphs || []).forEach(p => (p.lines || []).forEach(l => (l.words || []).forEach(w => out.push(w)))));
+    return out;
+  }
+  async function ocrDocument(doc, onPage) {
+    const worker = await ocrWorker();
+    const pages = [];
+    for (let p = 1; p <= doc.numPages; p++) {
+      onPage(p, doc.numPages);
+      const page = await doc.getPage(p);
+      const vp = page.getViewport({ scale: OCR_SCALE });
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.ceil(vp.width); canvas.height = Math.ceil(vp.height);
+      canvas.dataset.page = p; canvas.dataset.file = doc._fileName || '';
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
+      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+      await page.render({ canvasContext: ctx, viewport: vp }).promise;
+      const { data } = await worker.recognize(canvas);
+      pages.push({ items: P.ocrWordsToItems(wordsOf(data), OCR_SCALE, canvas.height) });
+      canvas.width = canvas.height = 0;
+      page.cleanup();
+    }
+    return pages;
+  }
+
+  // ---------- duplicates / overlaps ----------
+  function markDuplicates() {
+    const done = state.statements.filter(s => s.status !== 'busy' && !s.error && s.summary);
+    done.forEach(s => { delete s.duplicateOf; s.overlap = null; });
+    const sig = s => [s.meta.account, s.summary.opening, s.summary.closing, s.summary.totalCredit, s.summary.totalDebit, s.transactions.length].join('|');
+    const seen = new Map();
+    done.forEach(s => {
+      const k = sig(s);
+      if (seen.has(k)) s.duplicateOf = seen.get(k).fileName; else seen.set(k, s);
+    });
+    const live = done.filter(s => !s.duplicateOf && s.transactions.length);
+    live.forEach(a => {
+      const o = live.find(b => b !== a && b.meta.account && b.meta.account === a.meta.account && a.summary.from && b.summary.from &&
+        a.summary.from <= b.summary.to && b.summary.from <= a.summary.to);
+      if (o) a.overlap = o.fileName;
+    });
+  }
+
+  function suggestKeywords() {
+    const counts = {};
+    state.statements.filter(s => s.meta && s.meta.name).forEach(s => { const k = P.defaultOwnKeyword(s.meta.name); if (k) counts[k] = (counts[k] || 0) + 1; });
+    return Object.keys(counts).sort((a, b) => counts[b] - counts[a]).slice(0, 2).join(', ');
+  }
+
+  // ---------- derived data ----------
+  // ---------- derived data ----------
+  const normDesc = d => String(d || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const txKey = t => [t.date ? t.date.getTime() : '', Math.round(t.debit * 100), Math.round(t.credit * 100), normDesc(t.description)].join('|');
+
+  function recompute() {
+    const good = state.statements.filter(isIncluded);
+    const kws = $('ownKw').value.split(',').map(s => s.trim()).filter(Boolean);
+    const own = P.ownMatcher(good.map(s => s.meta.account), kws);
+
+    // group statements by account; drop transactions already present in an earlier statement of the same account
+    const groups = new Map();
+    good.forEach(st => {
+      const k = st.meta.account ? `${st.meta.bank || ''}|${st.meta.account}` : `file|${st.id}`;
+      if (!groups.has(k)) groups.set(k, []);
+      groups.get(k).push(st);
+    });
+    state.txns = [];
+    state.accounts = [];
+    groups.forEach(list => {
+      list.sort((a, b) => (a.summary.from || 0) - (b.summary.from || 0) || (a.summary.to || 0) - (b.summary.to || 0));
+      const seen = new Map();
+      const acc = { key: list[0].id, statements: list, txns: [] };
+      list.forEach(st => {
+        const here = new Map();
+        let skipped = 0;
+        st.transactions.forEach((t, i) => {
+          const k = txKey(t);
+          const usedHere = here.get(k) || 0;
+          here.set(k, usedHere + 1);
+          if (usedHere < (seen.get(k) || 0)) { skipped++; return; } // same row already counted from an earlier statement
+          let party = P.counterparty(t.description);
+          const category = P.categorize(t, own, party);
+          if (/^Interest|Bank Charges/.test(category)) party = (st.meta.bank || 'BANK').toUpperCase();
+          if (/^Own Account/.test(category)) {
+            const a = own.accountIn(t.description);
+            const other = a && a !== st.meta.account && good.find(g => g.meta.account === a);
+            party = other ? `OWN A/C – ${label(other).toUpperCase()}` : 'OWN ACCOUNT TRANSFER';
+          }
+          const flag = t.mismatch ? 'Balance mismatch' : t.fixed === 'amount' ? 'OCR: amount from balance' : t.fixed === 'balance' ? 'OCR: balance recalculated' : '';
+          const row = { ...t, st, acc, seq: i + 1, category, party: party || 'UNIDENTIFIED', channel: P.channel(t.description, t.chq), flag };
+          state.txns.push(row); acc.txns.push(row);
+        });
+        here.forEach((n, k) => seen.set(k, Math.max(seen.get(k) || 0, n)));
+        st.overlapSkipped = skipped;
+      });
+      buildAccount(acc);
+      state.accounts.push(acc);
+    });
+    renderFiles();
+    render(good);
+  }
+
+  function buildAccount(acc) {
+    const L = acc.statements, first = L[0], last = [...L].sort((a, b) => (a.summary.to || 0) - (b.summary.to || 0)).pop();
+    const T = acc.txns;
+    const r2 = n => Math.round(n * 100) / 100;
+    Object.assign(acc, {
+      bank: first.meta.bank || 'Unknown bank', account: String(first.meta.account || ''), name: (L.find(s => s.meta.name) || first).meta.name || '',
+      from: L.map(s => s.summary.from).filter(Boolean).sort((a, b) => a - b)[0] || null,
+      to: L.map(s => s.summary.to).filter(Boolean).sort((a, b) => b - a)[0] || null,
+      opening: first.summary.opening, closing: last.summary.closing,
+      totalCredit: r2(sumOf(T, t => t.credit)), totalDebit: r2(sumOf(T, t => t.debit)),
+      creditCount: T.filter(t => t.credit).length, debitCount: T.filter(t => t.debit).length,
+      ocr: L.some(s => s.ocr), files: L.map(s => s.fileName)
+    });
+    const notes = [];
+    const skipped = sumOf(L, s => s.overlapSkipped);
+    if (L.length > 1) notes.push(`${L.length} statements combined: ${L.map(s => `${P.fmtDate(s.summary.from)}–${P.fmtDate(s.summary.to)}`).join(', ')}.`);
+    if (skipped) notes.push(`${skipped} transaction(s) appearing in more than one statement were counted once.`);
+    L.forEach(s => (s.notes || []).concat(s.warnings || []).forEach(n => notes.push(L.length > 1 ? `${s.fileName}: ${n}` : n)));
+    const hasBal = L.every(s => s.summary.hasBalance !== false && s.status !== 'nobal');
+    const breaks = sumOf(L, s => s.summary.chainBreaks || 0);
+    const fixed = sumOf(L, s => s.summary.fixed || 0);
+    const calc = acc.opening != null ? r2(acc.opening + acc.totalCredit - acc.totalDebit) : null;
+    const gap = hasBal && acc.closing != null && calc != null && Math.abs(calc - acc.closing) > 0.05;
+    if (gap) notes.push(`Opening + credits − debits (${calc.toLocaleString('en-IN')}) differs from closing balance — statements do not cover a continuous period (missing months).`);
+    acc.notes = notes;
+    if (!T.length && L.every(s => s.status === 'empty')) { acc.status = 'info'; acc.statusText = 'No transactions'; }
+    else if (!hasBal) { acc.status = 'info'; acc.statusText = 'No balance column'; }
+    else if (breaks) { acc.status = 'warn'; acc.statusText = `Check ${breaks} row${breaks === 1 ? '' : 's'}`; }
+    else if (gap) { acc.status = 'warn'; acc.statusText = 'Period gap'; }
+    else { acc.status = 'ok'; acc.statusText = acc.ocr ? (fixed ? `Reconciled · OCR (${fixed} fixed)` : 'Reconciled · OCR') : 'Reconciled'; }
+    acc.ownIn = sumOf(T.filter(t => t.category === 'Own Account Transfer In'), t => t.credit);
+    acc.ownOut = sumOf(T.filter(t => t.category === 'Own Account Transfer Out'), t => t.debit);
+  }
+
+  function statusInfo(st) {
+    const s = st.summary || {};
+    if (st.status === 'busy') return { cls: 'busy', text: st.progress || 'Reading…' };
+    if (st.error && /^Password/.test(st.error)) return { cls: 'muted', text: 'Password locked – skipped' };
+    if (st.error) return { cls: 'bad', text: 'Failed' };
+    if (st.duplicateOf) return { cls: 'muted', text: 'Duplicate – excluded' };
+    if (st.status === 'empty') return { cls: 'info', text: 'No transactions' };
+    if (st.status === 'nobal') return { cls: 'info', text: 'No balance column' };
+    if (st.status === 'warn') return { cls: 'warn', text: `Check ${s.chainBreaks} row${s.chainBreaks === 1 ? '' : 's'}` };
+    return { cls: 'ok', text: st.ocr ? (s.fixed ? `Reconciled · OCR (${s.fixed} fixed)` : 'Reconciled · OCR') : 'Reconciled' };
+  }
+
+  // ---------- rendering ----------
+  function renderFiles() {
+    $('files').innerHTML = state.statements.map(st => {
+      const si = statusInfo(st);
+      const meta = st.error ? esc(st.error)
+        : st.status === 'busy' ? '' : `${esc(st.meta.bank || 'Unknown bank')} · A/c ${esc(st.meta.account || '?')} · ${st.transactions ? st.transactions.length : 0} txns`;
+      const msgs = [];
+      if (st.duplicateOf) msgs.push(['info', `Same statement as “${st.duplicateOf}” — not counted twice.`]);
+      if (st.overlap) msgs.push(['info', `Period overlaps with “${st.overlap}” (same account)${st.overlapSkipped ? ` — ${st.overlapSkipped} repeated transaction(s) counted only once` : ' — repeated transactions are counted once'}.`]);
+      (st.notes || []).forEach(n => msgs.push(['info', n]));
+      (st.warnings || []).slice(0, 4).forEach(w => msgs.push(['warn', w]));
+      const list = msgs.length ? `<ul class="msgs">${msgs.map(m => `<li class="${m[0]}">${esc(m[1])}</li>`).join('')}</ul>` : '';
+      return `<div class="file ${st.status === 'busy' ? 'is-busy' : ''}"><span class="nm" title="${esc(st.fileName)}">${esc(st.fileName)}</span><span class="badge ${si.cls}">${esc(si.text)}</span><span class="meta">${meta}</span>
+        <button class="x" data-id="${st.id}" title="Remove" aria-label="Remove">✕</button>${list}</div>`;
+    }).join('');
+    $('files').querySelectorAll('.x').forEach(b => b.onclick = () => {
+      state.statements = state.statements.filter(s => s.id !== +b.dataset.id);
+      markDuplicates(); renderFiles(); recompute();
+    });
+  }
+
+  function totals(txns) {
+    const r = { cr: 0, dr: 0, ncr: 0, ndr: 0 };
+    txns.forEach(t => { if (t.credit) { r.cr += t.credit; r.ncr++; } if (t.debit) { r.dr += t.debit; r.ndr++; } });
+    return r;
+  }
+  function aggregate(key) {
+    const m = new Map();
+    state.txns.forEach(t => {
+      const k = t[key];
+      const o = m.get(k) || { key: k, n: 0, cr: 0, dr: 0 };
+      o.n++; o.cr += t.credit; o.dr += t.debit; m.set(k, o);
+    });
+    return [...m.values()];
+  }
+  const sumOf = (list, f) => list.reduce((s, x) => s + (f(x) || 0), 0);
+
+  function render(good) {
+    const has = good.length > 0;
+    $('results').hidden = !has;
+    $('btnExcel').disabled = !has;
+    $('btnClear').disabled = state.statements.length === 0;
+    if (!has) return;
+
+    const ownIn = sumOf(state.txns.filter(t => t.category === 'Own Account Transfer In'), t => t.credit);
+    const ownOut = sumOf(state.txns.filter(t => t.category === 'Own Account Transfer Out'), t => t.debit);
+    const T = totals(state.txns);
+    const A = state.accounts;
+    const cardsA = [
+      ['Accounts', A.length, `${good.length} statement${good.length === 1 ? '' : 's'} · ${state.txns.length} transactions`],
+      ['Opening balance', inr(sumOf(A, a => a.opening)), 'all accounts'],
+      ['Total credits', inr(T.cr), `${T.ncr} entries`, 'cr'],
+      ['Total debits', inr(T.dr), `${T.ndr} entries`, 'dr'],
+      ['Closing balance', inr(sumOf(A, a => a.closing)), 'all accounts'],
+      ['External receipts', inr(T.cr - ownIn), `excl. own transfers ${inr(ownIn)}`, 'cr'],
+      ['External payments', inr(T.dr - ownOut), `excl. own transfers ${inr(ownOut)}`, 'dr']
+    ];
+    $('cards').innerHTML = cardsA.map(c => `<div class="card"><div class="k">${c[0]}</div><div class="v ${c[3] || ''}" title="${esc(c[1])}">${c[1]}</div><div class="s">${c[2]}</div></div>`).join('');
+
+    const cls = st => st === 'ok' ? 'ok' : st === 'warn' ? 'warn' : 'info';
+    const rows = A.map(a => `<tr><td>${esc(a.bank)}</td><td>${esc(a.account)}${a.statements.length > 1 ? ` <span class="muted">(${a.statements.length} files)</span>` : ''}</td><td>${P.fmtDate(a.from)} – ${P.fmtDate(a.to)}</td>
+        <td class="n">${inr(a.opening)}</td><td class="n cr">${inr(a.totalCredit)}</td><td class="n">${a.creditCount}</td>
+        <td class="n dr">${inr(a.totalDebit)}</td><td class="n">${a.debitCount}</td><td class="n">${inr(a.closing)}</td>
+        <td><span class="badge ${cls(a.status)}" title="${esc(a.notes.join('\n'))}">${esc(a.statusText)}</span></td></tr>`).join('');
+    $('tblAccounts').innerHTML = `<thead><tr><th>Bank</th><th>Account</th><th>Period</th><th class="n">Opening</th><th class="n">Credits</th><th class="n">#</th><th class="n">Debits</th><th class="n">#</th><th class="n">Closing</th><th>Status</th></tr></thead>
+      <tbody>${rows}</tbody><tfoot><tr><td colspan="3">Total</td><td class="n">${inr(sumOf(A, a => a.opening))}</td><td class="n">${inr(sumOf(A, a => a.totalCredit))}</td><td class="n">${sumOf(A, a => a.creditCount)}</td>
+      <td class="n">${inr(sumOf(A, a => a.totalDebit))}</td><td class="n">${sumOf(A, a => a.debitCount)}</td><td class="n">${inr(sumOf(A, a => a.closing))}</td><td></td></tr></tfoot>`;
+
+    const cats = aggregate('category').sort((a, b) => (b.cr + b.dr) - (a.cr + a.dr));
+    $('tblCats').innerHTML = `<thead><tr><th>Category</th><th class="n">#</th><th class="n">Credit</th><th class="n">Debit</th></tr></thead><tbody>` +
+      cats.map(c => `<tr><td>${esc(c.key)}</td><td class="n">${c.n}</td><td class="n cr">${c.cr ? inr(c.cr) : ''}</td><td class="n dr">${c.dr ? inr(c.dr) : ''}</td></tr>`).join('') + '</tbody>';
+
+    const parties = aggregate('party').sort((a, b) => (b.cr + b.dr) - (a.cr + a.dr)).slice(0, 15);
+    $('tblParties').innerHTML = `<thead><tr><th>Counterparty</th><th class="n">#</th><th class="n">Received</th><th class="n">Paid</th></tr></thead><tbody>` +
+      parties.map(c => `<tr><td>${esc(c.key)}</td><td class="n">${c.n}</td><td class="n cr">${c.cr ? inr(c.cr) : ''}</td><td class="n dr">${c.dr ? inr(c.dr) : ''}</td></tr>`).join('') + '</tbody>';
+
+    const fAcc = $('fAcc'), prevAcc = fAcc.value, fCat = $('fCat'), prevCat = fCat.value;
+    fAcc.innerHTML = '<option value="">All accounts</option>' + A.map(a => `<option value="${a.key}">${esc(`${a.bank} ${a.account}`)}</option>`).join('');
+    fAcc.value = A.some(a => String(a.key) === prevAcc) ? prevAcc : '';
+    fCat.innerHTML = '<option value="">All categories</option><option value="__flag">⚠ Flagged rows only</option>' + cats.map(c => `<option>${esc(c.key)}</option>`).join('');
+    fCat.value = prevCat === '__flag' || cats.some(c => c.key === prevCat) ? prevCat : '';
+    renderTxns();
+  }
+
+  function filtered() {
+    const acc = $('fAcc').value, ty = $('fType').value, cat = $('fCat').value, q = $('fSearch').value.trim().toLowerCase();
+    return state.txns.filter(t => (!acc || String(t.acc.key) === acc) && (!ty || (ty === 'cr' ? t.credit : t.debit)) &&
+      (!cat || (cat === '__flag' ? t.flag : t.category === cat)) && (!q || (t.description + ' ' + t.party + ' ' + t.chq).toLowerCase().includes(q)));
+  }
+
+  function renderTxns() {
+    const list = filtered();
+    const T = totals(list);
+    const MAX = 2000;
+    $('fCount').textContent = `${list.length} rows · Cr ${inr(T.cr)} · Dr ${inr(T.dr)}`;
+    $('tblTxns').innerHTML = `<thead><tr><th>Account</th><th>Date</th><th>Description</th><th>Chq/Ref</th><th class="n">Debit</th><th class="n">Credit</th><th class="n">Balance</th><th>Category</th><th>Counterparty</th></tr></thead><tbody>` +
+      list.slice(0, MAX).map(t => `<tr class="${t.flag ? 'flag' : ''}" ${t.flag ? `title="${esc(t.flag)}"` : ''}><td>${esc(label(t.st))}</td><td>${P.fmtDate(t.date)}</td><td class="desc">${esc(t.description)}</td><td>${esc(t.chq)}</td>
+        <td class="n dr">${t.debit ? inr(t.debit) : ''}</td><td class="n cr">${t.credit ? inr(t.credit) : ''}</td><td class="n">${inr(t.balance)}</td>
+        <td><span class="tag">${esc(t.category)}</span></td><td>${esc(t.party)}</td></tr>`).join('') +
+      (list.length > MAX ? `<tr><td colspan="9" class="muted">Showing first ${MAX} rows — the Excel file contains all.</td></tr>` : '') + '</tbody>';
+  }
+  ['fAcc', 'fType', 'fCat'].forEach(id => $(id).addEventListener('change', renderTxns));
+  $('fSearch').addEventListener('input', renderTxns);
+  $('btnApply').addEventListener('click', recompute);
+  $('ownKw').addEventListener('keydown', e => { if (e.key === 'Enter') recompute(); });
+  $('btnClear').addEventListener('click', () => { state.statements = []; state.txns = []; $('ownKw').value = ''; renderFiles(); recompute(); });
+
+  // ---------- Excel ----------
+  function buildModel() {
+    const accounts = state.accounts.map(a => ({
+      id: a.key, bank: a.bank, account: a.account, name: a.name, fileName: a.files.join(', '),
+      from: a.from, to: a.to, opening: a.opening, closing: a.closing, totalCredit: a.totalCredit, totalDebit: a.totalDebit,
+      creditCount: a.creditCount, debitCount: a.debitCount, status: a.status, statusText: a.statusText, ocr: a.ocr, notes: a.notes,
+      statements: a.statements.length, ownIn: a.ownIn, ownOut: a.ownOut
+    }));
+    const txns = state.txns.map(t => ({
+      accId: t.acc.key, accLabel: `${t.acc.bank} ${t.acc.account}`, bank: t.acc.bank, account: t.acc.account, seq: t.seq,
+      date: t.date, valueDate: t.valueDate, description: t.description, chq: t.chq, debit: t.debit, credit: t.credit, balance: t.balance,
+      channel: t.channel, category: t.category, party: t.party, flag: t.flag, file: t.st.fileName
+    }));
+    const names = {};
+    state.accounts.forEach(a => { if (a.name) names[a.name] = (names[a.name] || 0) + 1; });
+    const holder = Object.keys(names).sort((a, b) => names[b] - names[a])[0] || '';
+    return { title: 'Bank Statement Summary', holder, generated: new Date(), accounts, txns, statementCount: state.statements.filter(isIncluded).length };
+  }
+
+  async function exportExcel() {
+    const btn = $('btnExcel');
+    btn.disabled = true; const old = btn.textContent; btn.textContent = 'Preparing…';
+    try {
+      const wb = StatementReport.build(buildModel());
+      const bytes = await wb.toBytes();
+      const blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `Bank_Statement_Summary_${new Date().toISOString().slice(0, 10)}.xlsx`;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+      window.__lastXlsx = bytes; // used by automated tests
+    } catch (e) {
+      alert('Could not create the Excel file: ' + (e.message || e));
+    } finally { btn.disabled = false; btn.textContent = old; }
+  }
+  $('btnExcel').addEventListener('click', exportExcel);
+})();
+
+</script>
+</body>
+</html>
