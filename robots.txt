@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://weavesolution.com/sitemap.xml
