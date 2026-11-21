@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Download links — Weave Solutions admin</title>
+<link rel="icon" href="assets/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400..700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css?v=4">
+<style>
+body{background:var(--tint)}
+.top{background:var(--ink);color:#fff}
+.top .wrap{display:flex;align-items:center;gap:12px;height:62px}
+.top a.brand img{height:30px;filter:brightness(0) invert(1)}
+.top a.brand:hover img{filter:brightness(0) invert(.85)}
+.top b{font-size:.95rem;font-weight:600}
+.top .sp{flex:1}
+.top button{background:none;border:1px solid rgba(255,255,255,.35);color:#fff;border-radius:3px;padding:6px 12px;cursor:pointer;font-size:.85rem}
+.top button:hover{border-color:#fff}
+main{padding:26px 0 120px}
+.panel{background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:22px}
+.login{max-width:380px;margin:40px auto}
+.msg{font-size:.88rem;margin:10px 0 0;min-height:1.2em}
+.msg.bad{color:#B3342C}.msg.good{color:#1F7A44}
+.tip{font-size:.85rem;color:var(--muted);background:var(--accent-soft);border-radius:4px;padding:10px 12px;margin:0 0 18px}
+.rowcard{background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:16px;margin-bottom:12px;position:relative}
+.rowcard.off{opacity:.6}
+.rowcard .g{display:grid;grid-template-columns:1.1fr 1fr .5fr;gap:0 12px}
+.rowcard .g2{display:grid;grid-template-columns:1fr auto;gap:0 12px;align-items:end}
+@media(max-width:640px){.rowcard .g{grid-template-columns:1fr 1fr}.rowcard .g .ver{grid-column:span 2}}
+.rowcard .field{margin-bottom:10px}
+.rowcard .acts{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:4px}
+.rowcard .acts label{display:flex;align-items:center;gap:6px;font-size:.88rem;cursor:pointer}
+.rowcard .acts .sp{flex:1}
+.rowcard .meta{font-size:.76rem;color:var(--muted)}
+.lnk{font-size:.85rem;color:var(--accent)}
+.warn{font-size:.78rem;color:#9A5B12;display:none}
+.warn.show{display:block}
+.bar{position:fixed;left:0;right:0;bottom:0;background:rgba(255,255,255,.96);border-top:1px solid var(--line);padding:12px 0;z-index:20;backdrop-filter:blur(6px)}
+.bar .wrap{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.bar .st{flex:1;font-size:.86rem;color:var(--muted);min-width:160px}
+.empty{text-align:center;color:var(--muted);padding:30px 10px}
+.btn-x{background:none;border:1px solid var(--line);border-radius:3px;padding:6px 10px;font-size:.82rem;cursor:pointer;color:#B3342C}
+.btn-x:hover{border-color:#B3342C}
+</style>
+</head>
+<body>
+<div class="top"><div class="wrap">
+<a class="brand" href="https://weavesolution.com/" target="_blank" rel="noopener"><img src="assets/logo.png" alt="Weave Solutions"></a>
+<b>Download links</b><span class="sp"></span>
+<button id="lockBtn" hidden>Lock</button>
+</div></div>
+
+<main><div class="wrap">
+
+<div class="panel login" id="login">
+<h1 style="font-size:1.35rem">Download links</h1>
+<p class="muted" style="font-size:.92rem;margin:8px 0 16px">Add or change the Google Drive links behind the download buttons on the Our work and Free tools pages.</p>
+<form id="lf">
+<div class="field"><label for="pw">Admin password</label><input id="pw" type="password" autocomplete="current-password"></div>
+<button class="btn btn-p" style="width:100%" type="submit" id="lb">Open</button>
+<p class="msg" id="lmsg" role="alert"></p>
+</form>
+</div>
+
+<div id="app" hidden>
+<p class="tip">In Google Drive: right-click the file → <b>Share</b> → General access: <b>Anyone with the link</b> → Copy link, and paste it here. The website shows changes within about 30 minutes (straight away on a new phone or browser).</p>
+<div id="list"></div>
+<button class="btn btn-s" id="addBtn" type="button">+ Add a download link</button>
+</div>
+
+</div></main>
+
+<div class="bar" id="bar" hidden><div class="wrap">
+<span class="st" id="st">No changes.</span>
+<button class="btn btn-s btn-sm" id="reloadBtn" type="button">Undo changes</button>
+<button class="btn btn-p btn-sm" id="saveBtn" type="button">Save all</button>
+</div></div>
+
+<script>
+(function(){
+var EP='https://script.google.com/macros/s/AKfycbwTc17J2AUmkL7ghTSttw8jlRk2h0aSe1SzlRcny65obt1sNWJrdlB06VlaKjU8BqUk/exec';
+/* id must match data-dl on the website; label is what you see here */
+var PRODUCTS=[['journaldesk','JournalDesk'],['pace','PACE'],['pulse','Pulse'],['payroll','Payroll management'],
+  ['vaada','Vaada Billing'],['shani','Shani Traders'],['moodwala','Mood Wala Food'],
+  ['catoolkit','CA Financial Toolkit'],['invoicesummary','Invoice summariser'],['bankanalyzer','Bank statement summary'],
+  ['repayment-schedule','Repayment schedule'],['gstreco','GST reconciliation']];
+var $=function(id){return document.getElementById(id)};
+var pw=sessionStorage.getItem('weave.adminpw')||'',rows=[],saved='[]',busy=false;
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function call(body){
+  var ctl=new AbortController(),t=setTimeout(function(){ctl.abort()},25000);
+  return fetch(EP,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(body),signal:ctl.signal})
+    .then(function(r){return r.json()}).finally(function(){clearTimeout(t)});
+}
+var ERR={password:'Wrong password.',locked:'Too many wrong tries. The page is locked for 15 minutes.',
+  nopassword:'Set ADMIN_PASSWORD in Code.gs (8+ characters) and deploy a new version first.',server:'The sheet had a problem. Try again.'};
+function login(p){
+  $('lb').disabled=true;$('lmsg').className='msg';$('lmsg').textContent='Checking…';
+  call({kind:'admin_list',pw:p}).then(function(j){
+    if(!j.ok)throw new Error(ERR[j.error]||'Could not open.');
+    pw=p;sessionStorage.setItem('weave.adminpw',p);load(j.rows);
+    $('login').hidden=true;$('app').hidden=false;$('bar').hidden=false;$('lockBtn').hidden=false;
+  }).catch(function(e){
+    sessionStorage.removeItem('weave.adminpw');
+    $('lmsg').className='msg bad';$('lmsg').textContent=e.name==='AbortError'||e.name==='TypeError'?'No connection. Check the internet and try again.':e.message;
+  }).finally(function(){$('lb').disabled=false});
+}
+function load(list){
+  rows=(list||[]).map(function(r){return{id:r.id,label:r.label,url:r.url,version:r.version,updated:r.updated,show:r.show!==false,notes:r.notes||''}});
+  saved=JSON.stringify(strip());render();dirty();
+}
+function strip(){return rows.map(function(r){return{id:r.id,label:r.label,url:r.url,version:r.version,show:r.show,notes:r.notes}})}
+function isDrive(u){return /^https:\/\/(drive|docs)\.google\.com\//i.test(u)}
+function render(){
+  if(!rows.length){$('list').innerHTML='<div class="panel empty">No download links yet. Add the first one.</div>';return}
+  var opts=function(sel){var known=PRODUCTS.some(function(p){return p[0]===sel});
+    return PRODUCTS.map(function(p){return'<option value="'+p[0]+'"'+(p[0]===sel?' selected':'')+'>'+esc(p[1])+'</option>'}).join('')+
+      (!known&&sel?'<option value="'+esc(sel)+'" selected>'+esc(sel)+'</option>':'')};
+  $('list').innerHTML=rows.map(function(r,i){
+    return '<div class="rowcard'+(r.show?'':' off')+'" data-i="'+i+'">'+
+      '<div class="g"><div class="field"><label>Product</label><select data-k="id">'+opts(r.id)+'</select></div>'+
+      '<div class="field"><label>Button text</label><input data-k="label" maxlength="60" value="'+esc(r.label)+'" placeholder="Download for Windows"></div>'+
+      '<div class="field ver"><label>Version</label><input data-k="version" maxlength="30" value="'+esc(r.version)+'" placeholder="13.0"></div></div>'+
+      '<div class="field"><label>Google Drive link</label><input data-k="url" type="url" maxlength="500" value="'+esc(r.url)+'" placeholder="https://drive.google.com/file/d/…/view">'+
+      '<span class="warn'+(r.url&&!/^https:\/\//i.test(r.url)?' show':'')+'" data-w="https">The link must start with https://</span>'+
+      '<span class="warn'+(r.url&&/^https:\/\//i.test(r.url)&&!isDrive(r.url)?' show':'')+'" data-w="drive">Not a Google Drive link — fine if that is intended.</span></div>'+
+      '<div class="field"><label>Note for yourself <span class="muted" style="font-weight:400">(not shown on the website)</span></label><input data-k="notes" maxlength="200" value="'+esc(r.notes)+'"></div>'+
+      '<div class="acts"><label><input type="checkbox" data-k="show"'+(r.show?' checked':'')+'> Show on website</label>'+
+      (r.url&&/^https:\/\//i.test(r.url)?'<a class="lnk" href="'+esc(r.url)+'" target="_blank" rel="noopener">Test link</a>':'')+
+      '<span class="sp"></span><span class="meta">'+(r.updated?'Updated '+esc(r.updated):'New')+'</span>'+
+      '<button class="btn-x" type="button" data-del>Delete</button></div></div>';
+  }).join('');
+}
+function dirty(){
+  var bad=rows.filter(function(r){return!r.label||!/^https:\/\//i.test(r.url)}).length;
+  var changed=JSON.stringify(strip())!==saved;
+  $('st').textContent=bad?bad+' link'+(bad>1?'s need':' needs')+' button text and an https:// link before saving.':changed?'Unsaved changes.':'All saved.';
+  $('st').style.color=bad?'#B3342C':'';
+  $('saveBtn').disabled=busy||!changed||!!bad;$('reloadBtn').disabled=busy||!changed;
+}
+$('list').addEventListener('input',function(e){
+  var c=e.target.closest('.rowcard'),k=e.target.dataset.k;if(!c||!k)return;
+  var r=rows[+c.dataset.i];r[k]=e.target.type==='checkbox'?e.target.checked:e.target.value.trim();
+  if(k==='show')c.classList.toggle('off',!r.show);
+  if(k==='url'){c.querySelector('[data-w=https]').classList.toggle('show',!!r.url&&!/^https:\/\//i.test(r.url));
+    c.querySelector('[data-w=drive]').classList.toggle('show',/^https:\/\//i.test(r.url)&&!isDrive(r.url))}
+  dirty();
+});
+$('list').addEventListener('change',function(e){
+  var k=e.target.dataset.k,c=e.target.closest('.rowcard');if(!c||(k!=='id'&&k!=='show'))return;
+  rows[+c.dataset.i][k]=k==='show'?e.target.checked:e.target.value;
+  if(k==='show')c.classList.toggle('off',!e.target.checked);
+  dirty();
+});
+$('list').addEventListener('click',function(e){
+  if(!e.target.hasAttribute('data-del'))return;
+  var i=+e.target.closest('.rowcard').dataset.i,r=rows[i];
+  if(!confirm('Delete "'+(r.label||'this link')+'"? It is removed from the website when you press Save all.'))return;
+  rows.splice(i,1);render();dirty();
+});
+$('addBtn').onclick=function(){rows.push({id:'journaldesk',label:'',url:'',version:'',updated:'',show:true,notes:''});render();dirty();
+  var c=$('list').lastElementChild;c.scrollIntoView({block:'center'});c.querySelector('[data-k=label]').focus()};
+$('reloadBtn').onclick=function(){load(JSON.parse(saved));};
+$('saveBtn').onclick=function(){
+  busy=true;dirty();$('st').style.color='';$('st').textContent='Saving…';
+  call({kind:'admin_save',pw:pw,rows:strip()}).then(function(j){
+    if(!j.ok){if(j.error==='password'||j.error==='locked'){lock();}throw new Error(ERR[j.error]||'Not saved.')}
+    busy=false;load(j.rows);$('st').style.color='#1F7A44';$('st').textContent='Saved. The website will show it within about 30 minutes.';
+  }).catch(function(e){busy=false;dirty();$('st').style.color='#B3342C';
+    $('st').textContent=(e.name==='AbortError'||e.name==='TypeError')?'Not saved — no connection. Your changes are still here; try again.':e.message});
+};
+function lock(){sessionStorage.removeItem('weave.adminpw');pw='';rows=[];$('app').hidden=true;$('bar').hidden=true;$('lockBtn').hidden=true;$('login').hidden=false;$('pw').value='';}
+$('lockBtn').onclick=function(){if(JSON.stringify(strip())!==saved&&!confirm('You have unsaved changes. Lock anyway?'))return;lock()};
+window.addEventListener('beforeunload',function(e){if(rows.length&&JSON.stringify(strip())!==saved){e.preventDefault();e.returnValue=''}});
+$('lf').addEventListener('submit',function(e){e.preventDefault();var p=$('pw').value;if(p)login(p)});
+if(pw)login(pw);
+})();
+</script>
+</body>
+</html>

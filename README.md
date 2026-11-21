@@ -1,39 +1,48 @@
-# Weave Solutions — website (weavesolution.com)
+# Weave Solutions — website (weavesolution.com) · v4
 
-Plain HTML pages, no build step. All pages share `site.css` (styles) and `site.js` (menu, image viewer,
-footer year). All pictures are in `assets/`.
+Plain HTML pages, no build step. All site pages share `site.css` and `site.js`. All pictures are in `assets/`.
 
 | File | Page |
 |---|---|
 | `index.html` | Home |
-| `products.html` | Our work: JournalDesk, PACE, Vaada Billing, Shani Traders, Mood Wala Food, Payroll, CMA data |
-| `tools.html` | Free tools list |
-| `about.html`, `contact.html`, `privacy.html` | About, contact + callback form, privacy note |
+| `products.html` | Our work: JournalDesk, PACE, Pulse, Vaada Billing, Shani Traders, Mood Wala Food, Payroll, CMA data |
+| `tools.html` | Free tools |
+| `contact.html` | Contact, with two forms: Request a callback / Get a quotation |
+| `about.html`, `privacy.html` | About, privacy note |
 | `gstreco.html`, `repayment-schedule.html`, `bankanalyzer.html`, `invoicesummary.html` | The free tools |
+| `links.html` | **Admin page** for download links (password-protected, hidden from Google, not linked anywhere) |
 | `404.html`, `sitemap.xml`, `robots.txt` | Page-not-found page and files for Google |
-| `apps-script/Code.gs` | Callback form → Google Sheet + email (not uploaded to the site; it lives in Apps Script) |
+| `apps-script/Code.gs` | Backend for both forms and the download links (lives in Apps Script, not on the site) |
 
-## Publishing (GitHub, repo `weave`)
+## Publishing v4
 
-1. Upload all files and the `assets` folder (keep the existing `CNAME` file).
-2. In `assets`, delete the old files that are no longer used: `product-accounting.png`, `product-billing.png`,
-   `product-food-ordering.png`, `product-payroll.png`, `tool-gst-reco.png`, `tool-repayment.png`, `hero.jpg`,
-   `requirement.jpg`, and `assets/README.md`.
-3. **Update the Apps Script** (the contact form needs it): open the Sheet → Extensions → Apps Script → replace
-   Code.gs with `apps-script/Code.gs` → Save → Deploy → Manage deployments → pencil → Version: **New version** → Deploy.
-   Then run `testEntry` once. The web link stays the same, so `contact.html` needs no change.
-4. In Google Search Console, add `https://weavesolution.com/sitemap.xml`.
+1. **Your email:** open `site.js`, line 4, and replace `YOUR-EMAIL-HERE` with the email the website should show.
+   Until you do, the email box is simply hidden.
+2. **Apps Script (needed for quotations and download links):**
+   1. In `apps-script/Code.gs`, set `ADMIN_PASSWORD` to your own password (8+ characters).
+   2. Sheet → Extensions → Apps Script → replace Code.gs → Save.
+   3. Run `setupSheet` once (adds the Quotations and Downloads tabs; Enquiries stays as it is).
+   4. Deploy → Manage deployments → pencil → Version: **New version** → Deploy. (Not "New deployment".)
+   5. Run `testQuote` once and check the Quotations tab and your mail.
+3. Upload all files and `assets/` to the `weave` repo (keep `CNAME`).
+
+## Download buttons
+
+Open `https://weavesolution.com/links.html`, enter the admin password, add a link (product, button text,
+Drive link, version), press **Save all**. The button appears under that product on Our work (or Free tools).
+Visitors' browsers keep the list for 30 minutes and Apps Script keeps it for 6 hours, so the website uses almost
+no Apps Script quota; saving clears the Apps Script copy straight away.
+
+Google Drive: Share → General access → **Anyone with the link**, or visitors will see "Request access".
+
+Product IDs (must match `data-dl` on the pages): journaldesk, pace, pulse, payroll, vaada, shani, moodwala,
+catoolkit, invoicesummary, bankanalyzer, repayment-schedule, gstreco.
 
 ## Adding a project to "Our work"
 
-Screenshots go in `assets/` as `.webp` (phone shots about 540 px wide, computer shots about 1600 px wide,
-under 100 KB each — squoosh.app does this). In `products.html` copy one `<article class="case">…</article>`
-block, change the text and the `<button>`s inside `<div class="gal">` (one button per screenshot; class `phone`
-for phone screenshots, `wide` for computer screenshots). Add a matching line to the "Our work" menu, which
-is repeated at the top of each site page.
+Screenshots go in `assets/` as `.webp` (phone ~540 px wide, computer ~1600 px wide). In `products.html` copy one
+`<article class="case">…</article>` block, change the id, text and the `<button>`s inside `<div class="gal">`
+(class `phone` or `wide`). Add the id to `PRODUCTS` in `links.html` if it should get download buttons, and a line
+to the "Our work" menu at the top of each page.
 
-## Notes
-
-- The callback form now tells the visitor if sending failed and offers WhatsApp instead.
-- Google Analytics G-K49PPV9EPG is on every page.
-- No ads anywhere.
+When you change `site.css` or `site.js`, raise `?v=4` to `?v=5` in the pages so browsers fetch the new copy.
