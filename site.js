@@ -1,7 +1,7 @@
 /* Weave Solutions — shared script for every site page */
 
 /* ===== The website's email address. Change it here only — every page picks it up. ===== */
-var WEAVE_EMAIL = 'YOUR-EMAIL-HERE';
+var WEAVE_EMAIL = 'weavesolution.connect@gmail.com';
 
 (function () {
   var d = document, h = d.querySelector('.hdr'), b = d.querySelector('.burger');
